@@ -34,6 +34,8 @@ type Request struct {
 	// needs, and a task that only looks.
 	Apps     []string
 	ReadOnly bool
+	// SkillText is added to the model's first message, after the task.
+	SkillText string
 	// Extra is what the person gave besides the task's words (StartWith):
 	// it goes with the first message, and stays in the conversation for
 	// Continue. Agents' tasks have none.
@@ -254,7 +256,7 @@ func (ru *run) logStep(c call, res phoneResult) {
 	ru.note = ""
 	ru.mu.Unlock()
 	ru.update(func(s *Status) {
-		s.Log = append(s.Log, Step{At: time.Now(), Tool: c.name, Intent: oneLine(intent), Status: res.status, Note: note})
+		s.Log = append(s.Log, Step{At: time.Now(), Tool: c.name, Intent: oneLine(intent), Status: res.status, Note: note, Output: excerpt(res.text)})
 		trimLog(s)
 	})
 }
@@ -268,6 +270,15 @@ func trimLog(s *Status) {
 		s.LogFirst += n - maxLog
 		s.Log = append([]Step(nil), s.Log[n-maxLog:]...)
 	}
+}
+
+// excerpt keeps a tool result short enough for a task report.
+func excerpt(s string) string {
+	s = strings.TrimSpace(s)
+	if r := []rune(s); len(r) > 800 {
+		s = string(r[:799]) + "…"
+	}
+	return s
 }
 
 // noteOf is the model's words before its calls, cut to a line or two.
@@ -335,7 +346,7 @@ func (a agentTasks) Run(req mcp.TaskRequest) (mcp.Task, error) {
 		return mcp.Task{}, &mcp.TaskError{Code: gateway.ErrUnsupported,
 			Message: "Pinky's own agent has no API key for its model yet. Ask the person to add one in Pinky's Settings › Agents › Ask Pinky, or drive the phone with the phone_* tools."}
 	}
-	s, err := a.r.StartFor(cfg, Request{Device: req.Device, Task: req.Task, Agent: req.Agent, Apps: req.Apps, ReadOnly: req.ReadOnly})
+	s, err := a.r.StartFor(cfg, Request{Device: req.Device, Task: req.Task, Agent: req.Agent, Apps: req.Apps, ReadOnly: req.ReadOnly, SkillText: req.SkillText})
 	switch {
 	case errors.Is(err, ErrBusy):
 		return mcp.Task{}, &mcp.TaskError{Code: gateway.ErrDeviceBusy,
@@ -412,7 +423,7 @@ func taskOf(s Status) mcp.Task {
 		}
 	}
 	for _, st := range s.Log {
-		t.Log = append(t.Log, mcp.TaskStep{At: st.At, Tool: st.Tool, Intent: st.Intent, Status: st.Status, Note: st.Note, From: st.From})
+		t.Log = append(t.Log, mcp.TaskStep{At: st.At, Tool: st.Tool, Intent: st.Intent, Status: st.Status, Note: st.Note, From: st.From, Output: st.Output})
 	}
 	return t
 }

@@ -129,6 +129,9 @@ type Options struct {
 	// while it runs, through a Pilot that also has StartScheduled
 	// (schedules.go); nil leaves them out.
 	Schedules *schedule.Store
+	// Automation is imported skills, app routes and the embedded browser.
+	// nil leaves those settings as a short note.
+	Automation *Automation
 }
 
 // Pilot runs Pinky's own agent, one task a phone at a time, as
@@ -193,8 +196,10 @@ type Settings struct {
 	RecordingsDir string
 	DeveloperMode bool
 	// RemoteAgents serves MCP over Streamable HTTP at RemoteAddr, for agents
-	// that cannot start `pinky mcp`; each request needs the agent token.
+	// that cannot start `pinky mcp`. RemoteOpen, off by default, skips the
+	// agent token so a trusted network can connect without one.
 	RemoteAgents bool
+	RemoteOpen   bool
 	RemoteAddr   string
 	// WebMirror shows the phones' screens in a web browser, on this
 	// computer and through Tailscale; each viewer needs the mirror's token.
@@ -377,6 +382,7 @@ const (
 	pageActivity
 	pageSettings
 	pageAddPhone
+	pageBrowser
 )
 
 // allPhones is the sidebar row that shows every phone.
@@ -439,6 +445,7 @@ type app struct {
 	changes  int
 	act      activityState
 	set      settingsState
+	auto     automationState
 	add      addState
 	droid    droidState      // Add phone's Android steps
 	virt     virtState       // Add phone's virtual phones (addvirtual.go)

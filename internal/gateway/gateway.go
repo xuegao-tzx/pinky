@@ -61,8 +61,12 @@ type Options struct {
 	// NoScreenshots skips the before and after screenshots of each step.
 	NoScreenshots bool
 	// TrustNewAgents skips the approval of an agent's first connection. Use
-	// it only with fake devices.
+	// it only with fake devices. Unrestricted sets it.
 	TrustNewAgents bool
+	// Unrestricted lets every action run: no approval, no blocked app and
+	// no password-field refusal. The policy engine is switched the same
+	// way, and a new agent is not asked about.
+	Unrestricted bool
 	// DefaultScope is what a newly approved agent may do; default everything.
 	DefaultScope Scope
 	// PIN returns a phone's saved PIN when the person asks to unlock it
@@ -238,6 +242,10 @@ func New(o Options) (*Gateway, error) {
 	}
 	if g.policy == nil {
 		g.policy = policy.Default()
+	}
+	if o.Unrestricted {
+		g.policy.SetUnrestricted(true)
+		g.opt.TrustNewAgents = true
 	}
 	if o.DataDir != "" {
 		st, err := history.Open(filepath.Clean(o.DataDir))

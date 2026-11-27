@@ -29,6 +29,7 @@ const (
 	secAgents
 	secPrivacy
 	secAdvanced
+	secAutomation
 )
 
 type settingsState struct {
@@ -112,6 +113,7 @@ func (a *app) settingsPage(c *mg.Context) {
 			tab(secSafety, icShield, icShieldOn, locales.SettingsSectionSafety(), len(a.files.list) > 0)
 			tab(secPrivacy, icPrivacy, icPrivacyOn, locales.SettingsSectionPrivacy(), false)
 			tab(secAdvanced, icSliders, icSlidersOn, locales.SettingsSectionAdvanced(), false)
+			tab(secAutomation, icMonitor, icMonitor, locales.SettingsSectionAutomation(), false)
 			a.feedbackLink(c)
 		})
 		a.watchFileProblems(c)
@@ -127,6 +129,8 @@ func (a *app) settingsPage(c *mg.Context) {
 					a.settingsPrivacy(c)
 				case secAdvanced:
 					a.settingsAdvanced(c)
+				case secAutomation:
+					a.settingsAutomation(c)
 				default:
 					a.settingsSafety(c)
 				}

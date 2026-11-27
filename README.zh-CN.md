@@ -266,6 +266,17 @@ Pinky 在启动时和之后每隔几小时检查一次新版本，有新版本�
 
 Pinky 会发送匿名的使用统计（只有计数，比如跑了几个任务、调用了哪些工具、连了几台手机，大约一天一次，带一个随机的安装 ID）和崩溃报告；可以在「设置 › 隐私」里把两者都关掉，或者设置 `DO_NOT_TRACK=1`。屏幕内容、输入的文字、App 名、手机名和标识、PIN 码和文件名都不会发送。「帮助 › 发送反馈…」会帮你打开一个 GitHub issue，填好你的留言和诊断信息，你看过后自己提交。完整清单见 [docs/TELEMETRY.md](docs/TELEMETRY.md)。
 
+## 自动化
+
+这个版本的设备操作不再弹出审批。任务里给出的密码和验证码可以输入到真机或模拟器的密码框，也不会再按敏感 App 把界面藏起来。「设置 › 安全」还在，但不再拦住一次调用。
+
+- **Skill。**「设置 › 自动化」可以导入含有 `SKILL.md` 的文件夹，或包含多个 Skill 子文件夹的目录。每个 Skill 可以启用、停用、刷新或移除。启用的 Skill 会写进「交给 Pinky」的第一条消息。模型用 `skill_read` 读取完整文件，用 `skill_run` 在该目录运行命令（系统 shell，因此 bash、Python、Node 和 adb 都可以）。
+- **App 路由。**同一页，以及配置目录里的 `app-routes.yaml`，保存预设：名称、URL Scheme（例如 `hellobike://hellobike.com/`）、Android 包名、iOS Bundle ID 和常用路由。这些都由你填写，不会写死。`open_app_route` 打开其中一条：Android 使用 `am start -a android.intent.action.VIEW -d <uri>`，预设里有包名时加上 `-p <package>`；iOS 走 Pinky 现有的 URL 通道。
+- **远程 MCP。**「设置 › 智能体 › 远程智能体」，或 `pinky daemon --http 0.0.0.0:7465`，用 Streamable HTTP 提供同一组工具。`--http-open`，或在「设置 › 自动化」关掉「要求智能体令牌」，会在你信任的网络上不再检查令牌。`run_agent_task` 把一段自然语言任务、一台手机和可选的 Skill 交给 Pinky 里配置的模型。`agent_task_wait` 返回结构化结果：状态、摘要、步骤和截图路径。这一次任务里，模型可以同时使用已导入的 Skill、手机和内嵌浏览器。
+- **内嵌浏览器。**侧栏的「浏览器」打开 Pinky 自己的页面（例如模拟器网站）。地址栏、前进、后退、刷新和常用地址都在 Pinky 里；Cookie 保存在 Pinky 的数据目录。安装了 Chrome 或 Chromium 时，「打开浏览器窗口」会用同一个页面打开它（`PINKY_CHROME` 指定程序），方便先人工登录，工具继续操作那个窗口。工具包括 `webview_navigate`、`webview_back`、`webview_forward`、`webview_reload`、`webview_state`、`webview_content`、`webview_click`、`webview_type`、`webview_scroll`、`webview_eval` 和 `webview_screenshot`。
+
+详情见 [docs/notes/automation.md](docs/notes/automation.md)。
+
 ## 常见问题
 
 <details>

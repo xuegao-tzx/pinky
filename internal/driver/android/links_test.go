@@ -193,3 +193,18 @@ func TestLinks(t *testing.T) {
 		t.Errorf("starts:\n%s\nwant:\n%s", strings.Join(starts, "\n"), strings.Join(want, "\n"))
 	}
 }
+
+func TestViewStartArgs(t *testing.T) {
+	got, err := viewStartArgs("hellobike://hellobike.com/ride?bike=42", "com.jingyao.easybike")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "-a android.intent.action.VIEW -d 'hellobike://hellobike.com/ride?bike=42' -p com.jingyao.easybike"
+	if got != want {
+		t.Fatalf("%s", got)
+	}
+	got, err = viewStartArgs("https://example.com/a", "")
+	if err != nil || got != "-a android.intent.action.VIEW -d https://example.com/a" {
+		t.Fatalf("%s %v", got, err)
+	}
+}

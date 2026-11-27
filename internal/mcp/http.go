@@ -37,6 +37,7 @@ type HTTP struct {
 	srv     *sdk.Server
 	handler http.Handler
 	token   string
+	open    bool         // no bearer token; the listener is the only gate
 	sl      *sessionless // clients that send no session id (sessionless.go)
 
 	// OwnNames, when set, returns this computer's own DNS names that a
@@ -44,6 +45,14 @@ type HTTP struct {
 	// name, such as "mac.tail1234.ts.net", for `tailscale serve` in front
 	// of Pinky. Set it before serving.
 	OwnNames func(ctx context.Context) []string
+}
+
+// OpenHTTP is HTTP with no bearer token. Use it only on a trusted network.
+func (s *Server) OpenHTTP() *HTTP {
+	h := s.HTTP("open")
+	h.open = true
+	h.token = ""
+	return h
 }
 
 // HTTP returns the Streamable HTTP endpoint for the server's tools, at
@@ -153,6 +162,9 @@ func loopbackHost(hostport string) bool {
 }
 
 func (h *HTTP) authorized(r *http.Request) bool {
+	if h.open {
+		return true
+	}
 	auth := r.Header.Get("Authorization")
 	scheme, tok, ok := strings.Cut(auth, " ")
 	if !ok || !strings.EqualFold(scheme, "Bearer") || h.token == "" {

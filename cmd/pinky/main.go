@@ -202,6 +202,8 @@ Flags:
   --fake    use scripted fake phones (app, daemon, mcp, devices)
   --http addr
             daemon: also serve MCP over HTTP at addr (127.0.0.1:7465)
+  --http-open
+            with --http, do not require the agent token
 
 Environment:
   PINKY_HOME         keep config, data and the socket under this folder

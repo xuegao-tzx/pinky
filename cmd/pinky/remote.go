@@ -27,6 +27,7 @@ type remoteAgents struct {
 
 	mu   sync.Mutex
 	addr string
+	open bool // no bearer token
 	ln   net.Listener
 	srv  *http.Server
 	h    *mcp.HTTP
@@ -36,12 +37,17 @@ func newRemoteAgents(m *mcp.Server, token string, log *slog.Logger) *remoteAgent
 	return &remoteAgents{mcp: m, token: token, log: log}
 }
 
-// Set starts, moves or stops the HTTP endpoint.
+// Set starts, moves or stops the HTTP endpoint. Requests need the agent token.
 func (r *remoteAgents) Set(on bool, addr string) error {
+	return r.SetWithAuth(on, addr, true)
+}
+
+// SetWithAuth is Set. auth false accepts requests with no bearer token.
+func (r *remoteAgents) SetWithAuth(on bool, addr string, auth bool) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	addr = strings.TrimSpace(addr)
-	if on && r.srv != nil && addr == r.addr {
+	if on && r.srv != nil && addr == r.addr && auth == !r.open {
 		return nil
 	}
 	r.stopLocked()
@@ -55,10 +61,15 @@ func (r *remoteAgents) Set(on bool, addr string) error {
 	if err != nil {
 		return fmt.Errorf("remote agents: listen on %s: %w", addr, err)
 	}
-	h := r.mcp.HTTP(r.token)
+	var h *mcp.HTTP
+	if auth {
+		h = r.mcp.HTTP(r.token)
+	} else {
+		h = r.mcp.OpenHTTP()
+	}
 	h.OwnNames = tailnetNames
 	srv := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second}
-	r.addr, r.ln, r.srv, r.h = addr, ln, srv, h
+	r.addr, r.open, r.ln, r.srv, r.h = addr, !auth, ln, srv, h
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			r.log.Warn("remote agents stopped", "addr", addr, "err", err)
@@ -103,7 +114,7 @@ func (r *remoteAgents) stopLocked() {
 	defer cancel()
 	r.srv.Shutdown(ctx)
 	r.log.Info("remote agents off", "addr", r.addr)
-	r.addr, r.ln, r.srv, r.h = "", nil, nil, nil
+	r.addr, r.open, r.ln, r.srv, r.h = "", false, nil, nil, nil
 }
 
 // tailnetNames returns this computer's tailnet name, which `tailscale

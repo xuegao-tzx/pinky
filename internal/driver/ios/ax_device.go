@@ -121,6 +121,10 @@ func (a *AXDevice) LinkApp(ctx context.Context, link string) (driver.App, error)
 }
 
 // OpenLink implements driver.LinkOpener, through CoreDevice's app service.
+func (a *AXDevice) OpenURI(ctx context.Context, uri, bundle string) error {
+	return a.d.OpenURI(ctx, uri, bundle)
+}
+
 func (a *AXDevice) OpenLink(ctx context.Context, link string, app driver.App) error {
 	return a.d.OpenLink(ctx, link, app)
 }

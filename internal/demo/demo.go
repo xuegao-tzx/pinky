@@ -141,6 +141,8 @@ type Device struct {
 	appLocales map[string]string
 	// vit is the battery and storage it reports (vitals.go).
 	vit vitals
+	// lastURI is the last OpenURI, for tests of app routes.
+	lastURI, lastURIApp string
 }
 
 // NewDevice returns a demo phone. Android phones use the Pixel launcher,
@@ -163,6 +165,22 @@ func NewDevice(id, name string, platform driver.Platform) *Device {
 	}
 	d.stack = []string{"home"}
 	return d
+}
+
+// OpenURI implements driver.URIOpener. A demo phone records the URI.
+func (d *Device) OpenURI(_ context.Context, uri, id string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.lastURI, d.lastURIApp = uri, id
+	d.inputs = append(d.inputs, Input{Kind: "link", Text: uri})
+	return nil
+}
+
+// LastURI returns the last URI OpenURI opened, and the package or bundle.
+func (d *Device) LastURI() (uri, id string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.lastURI, d.lastURIApp
 }
 
 // Info implements driver.Device.

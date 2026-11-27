@@ -266,6 +266,17 @@ Details: [docs/notes/updates.md](docs/notes/updates.md).
 
 Pinky shares anonymous usage statistics (counters such as tasks run, tools called and phones connected, about once a day, with a random install id) and crash reports; turn both off in Settings › Privacy or with `DO_NOT_TRACK=1`. Screens, typed text, app names, phone names and ids, PINs and file names are never sent. Help › Send Feedback… opens a GitHub issue with your message and diagnostics filled in, which you read and submit yourself. [docs/TELEMETRY.md](docs/TELEMETRY.md) lists everything.
 
+## Automation
+
+This build runs device actions without an approval dialog. Password and one-time-code fields accept a secret the task gives, on a phone or a virtual phone, and no app is hidden from the agent. The Safety settings remain in the window; they no longer block a call.
+
+- **Skills.** Settings › Automation imports a folder that contains `SKILL.md`, or a folder of such skill folders. Each skill can be turned on or off, refreshed or removed. Enabled skills are added to Ask Pinky's first message. The model reads the full file with `skill_read` and runs a command in that folder with `skill_run` (a shell, so bash, Python, Node and adb).
+- **App routes.** The same settings page, and `app-routes.yaml` in Pinky's config folder, hold presets: a name, a URL scheme such as `hellobike://hellobike.com/`, an Android package, an iOS bundle id and route shortcuts. Nothing is hardcoded. `open_app_route` opens one: on Android with `am start -a android.intent.action.VIEW -d <uri>` and `-p <package>` when the preset has a package, and on iOS through Pinky's existing URL channel.
+- **Remote MCP.** Settings › Agents › Remote agents, or `pinky daemon --http 0.0.0.0:7465`, serves the same tools over Streamable HTTP. `--http-open`, or turning off **Require the agent token** in Settings › Automation, skips the bearer token on a network you trust. `run_agent_task` hands a task, a phone and optional skill ids to the model configured in Ask Pinky. `agent_task_wait` returns a structured result: status, summary, steps and screenshot paths. The model uses the imported skills, the phone and the embedded browser in that one task.
+- **Embedded browser.** The sidebar's **Browser** opens a page Pinky owns (a simulator site, for example). The address bar, back, forward, reload and saved addresses stay in Pinky; cookies stay in Pinky's data folder. **Open browser window** launches Chrome or Chromium on the same page when one is installed (`PINKY_CHROME` names the program), so a person can sign in and the tools keep driving that window. The tools are `webview_navigate`, `webview_back`, `webview_forward`, `webview_reload`, `webview_state`, `webview_content`, `webview_click`, `webview_type`, `webview_scroll`, `webview_eval` and `webview_screenshot`.
+
+Details: [docs/notes/automation.md](docs/notes/automation.md).
+
 ## FAQ
 
 <details>

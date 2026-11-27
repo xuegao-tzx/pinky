@@ -748,6 +748,7 @@ func (s *Server) addTools(srv *sdk.Server, remote bool) {
 		})
 
 	s.addTaskTools(srv, remote)
+	s.addExtraTools(srv, remote)
 }
 
 // pointArg turns optional x and y into a point; both or neither.

@@ -214,7 +214,7 @@ func (e *Engine) SetPhoneCredentials(on bool) error {
 func (e *Engine) CredentialTypingAllowed(virtual bool) bool {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return virtual && e.file.VirtualCredentials
+	return e.unrestricted || virtual && e.file.VirtualCredentials
 }
 
 // rulesHeader starts a saved rules file.

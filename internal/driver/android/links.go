@@ -158,6 +158,34 @@ func (d *Device) packageApp(pkg string) driver.App {
 	return driver.App{ID: pkg, Name: systemNames[pkg]}
 }
 
+// viewStartArgs is the `am start` tail for a VIEW intent. package may be
+// empty. The caller adds `am start --user …`.
+func viewStartArgs(uri, pkg string) (string, error) {
+	arg, err := linkArg(uri)
+	if err != nil {
+		return "", err
+	}
+	args := "-a android.intent.action.VIEW -d " + arg
+	pkg = strings.TrimSpace(pkg)
+	if pkg == "" {
+		return args, nil
+	}
+	if !looksLikePackage(pkg) {
+		return "", fmt.Errorf("android: open %s: package %q: %w", uri, pkg, driver.ErrUnsupported)
+	}
+	return args + " -p " + pkg, nil
+}
+
+// OpenURI implements driver.URIOpener. It starts a VIEW intent for uri,
+// optionally limited to one package, without asking which app would open it.
+func (d *Device) OpenURI(ctx context.Context, uri, pkg string) error {
+	args, err := viewStartArgs(uri, pkg)
+	if err != nil {
+		return err
+	}
+	return d.amStart(ctx, "current", 0, args, "open "+strings.TrimSpace(uri))
+}
+
 // OpenLink implements driver.LinkOpener: the link opens in app, a package
 // or an app clone, on the main screen.
 func (d *Device) OpenLink(ctx context.Context, link string, app driver.App) error {
@@ -279,4 +307,5 @@ func (b *Background) OpenLink(ctx context.Context, link string, app driver.App) 
 var (
 	_ driver.LinkOpener = (*Device)(nil)
 	_ driver.LinkOpener = (*Background)(nil)
+	_ driver.URIOpener  = (*Device)(nil)
 )

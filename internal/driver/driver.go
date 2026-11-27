@@ -891,6 +891,15 @@ type Backgrounder interface {
 	OpenBackground(ctx context.Context, opt BackgroundOptions) (Device, error)
 }
 
+// URIOpener opens a URL or an app scheme directly. packageOrBundle is an
+// Android package or an iOS bundle id, or empty to let the phone choose.
+// Android runs `am start -a android.intent.action.VIEW -d <uri>` and, when
+// the package is set, `-p <package>`. iOS opens the URL through the same
+// channel as a link, in that bundle when it is set.
+type URIOpener interface {
+	OpenURI(ctx context.Context, uri, packageOrBundle string) error
+}
+
 // LinkOpener is a Device that opens links: web addresses and app links
 // (deep links) such as myapp://item/42. The gateway asks LinkApp which app
 // opens a link and judges that app by the rules; OpenLink then opens the

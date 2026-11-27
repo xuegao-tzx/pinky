@@ -11,8 +11,8 @@
 #                                     scripts/androidcore.sh builds with the
 #                                     Android NDK, and checked for all three
 #   scripts/dist.sh darwin <out>      Pinky.app for Apple silicon and Intel Macs,
-#                                     signed with the Developer ID, notarized and
-#                                     stapled: pinky-<version>-darwin-<arch>.zip
+#                                     signed with SIGN (or PINKY_SIGN_IDENTITY),
+#                                     notarized and stapled: pinky-<version>-darwin-<arch>.zip
 #                                     (the updater's and Homebrew's) and
 #                                     pinky-<version>-<arch>.dmg
 #   scripts/dist.sh windows <out>     pinky-setup-<version>-amd64.exe (the installer,
@@ -36,8 +36,10 @@
 # on the Mac and in a Docker container for Windows and Linux.
 #
 # Environment:
-#   SIGN             the identity that signs Pinky.app (default: the Developer ID
-#                    of NATURAL SELECTION LABS); "-" signs ad hoc
+#   SIGN             the identity that signs Pinky.app. PINKY_SIGN_IDENTITY
+#                    and CODESIGN_IDENTITY are used when SIGN is unset.
+#                    None of them means "-", an ad-hoc signature. The
+#                    certificate name is never hardcoded.
 #   NOTARIZE         0 skips notarization, for a dry run (default 1)
 #   NOTARY_PROFILE   the notarytool keychain profile (default pinky-notary)
 #   NOTARY_KEYCHAIN  the keychain that holds it (default: the login keychain)
@@ -77,7 +79,6 @@ cd "$(dirname "$0")/.."
 root=$(pwd)
 [ -z "$out" ] || mkdir -p "$out"
 
-DEVELOPER_ID="Developer ID Application: NATURAL SELECTION LABS PTE. LTD. (492J8Q67PF)"
 strict=${STRICT:-0}
 stage=$root/build/dist
 resources=$root/cmd/pinky/resources
@@ -362,7 +363,7 @@ notarize() {
 
 darwin() {
 	[ "$(uname -s)" = Darwin ] || die "Pinky.app is built on macOS"
-	sign=${SIGN:-$DEVELOPER_ID}
+	sign=${SIGN:-${PINKY_SIGN_IDENTITY:-${CODESIGN_IDENTITY:--}}}
 	notarize=${NOTARIZE:-1}
 	if [ "$sign" = - ] && [ "$notarize" = 1 ]; then
 		die "an app signed ad hoc cannot be notarized: set SIGN to a Developer ID, or NOTARIZE=0"

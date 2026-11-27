@@ -248,6 +248,8 @@ type Step struct {
 	// From is, for a message, the agent that sent it; empty for the
 	// person's (Message.From).
 	From string
+	// Output is a short excerpt of the tool result.
+	Output string
 }
 
 // maxLog is how many steps Status.Log keeps.
@@ -334,6 +336,10 @@ type Options struct {
 	// Blocked reports whether the person blocked an app (the gateway's
 	// policy.Engine.Blocked): a note about it is refused. nil blocks none.
 	Blocked func(screen.App) bool
+	// SkillPrompt is the catalog of imported skills, added to a task's
+	// first message when the task did not name skills of its own. nil
+	// adds none.
+	SkillPrompt func() string
 	// APIs remembers the OpenAI-compatible services and models that call
 	// tools only through the Responses API; nil remembers them while the
 	// Runner runs.
@@ -846,6 +852,8 @@ var leftOut = map[string]bool{
 	// Pinky's own agent hands no task to itself.
 	"phone_task_run": true, "phone_task_status": true, "phone_task_wait": true, "phone_task_cancel": true,
 	"phone_task_list": true, "phone_task_steer": true,
+	// The model does not hand a task to itself.
+	"run_agent_task": true, "agent_task_status": true, "agent_task_wait": true, "agent_task_cancel": true,
 }
 
 // waits are the tools that wait for the person: their time does not count
@@ -1010,6 +1018,13 @@ func (ru *run) work(ctx context.Context) (End, string) {
 			text = strings.Replace(text, "</task>\n\n", "</task>\n\n"+extra, 1)
 		}
 		text += ru.req.Extra.prompt()
+		if ru.req.SkillText != "" {
+			text += "\n\n" + ru.req.SkillText
+		} else if prompt := ru.r.opt.SkillPrompt; prompt != nil {
+			if s := strings.TrimSpace(prompt()); s != "" {
+				text += "\n\n" + s
+			}
+		}
 		if ru.req.Agent.Name != "" {
 			text += "\n\n" + fromAgent(ru.req.Agent.Name)
 			if kept != "" {

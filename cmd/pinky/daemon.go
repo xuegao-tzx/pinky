@@ -35,7 +35,8 @@ func runDaemon(args []string) error {
 	c.flags(fs)
 	verbose := fs.Bool("v", false, "log debug messages")
 	noUpdates := fs.Bool("no-update-check", false, "do not look for new versions of Pinky")
-	httpAddr := fs.String("http", "", `also serve MCP over Streamable HTTP at this address, such as "`+ui.DefaultRemoteAddr+`"; each request needs the agent token (`+"`pinky token`"+`)`)
+	httpAddr := fs.String("http", "", `also serve MCP over Streamable HTTP at this address, such as "`+ui.DefaultRemoteAddr+`"; each request needs the agent token (`+"`pinky token`"+`) unless --http-open is set`)
+	httpOpen := fs.Bool("http-open", false, "with --http, do not require the agent token (a trusted network only)")
 	mirror := fs.Bool("mirror", false, "also show the phones in a web browser at "+webmirror.URL()+"; its secret link is printed to a terminal only")
 	mirrorControl := fs.Bool("mirror-control", false, "with --mirror, also let the browser use the phones; the control link is printed to a terminal only")
 	if err := fs.Parse(args); err != nil {
@@ -91,11 +92,19 @@ func runDaemon(args []string) error {
 		}()
 		defer func() { astop(); <-adone }()
 	}
+	auto := openAutomation(rg, c.Log)
+	defer auto.Close()
+	ask := startDaemonPilot(rg, auto, s)
+	defer ask.Close()
+	defer rg.MCP.SetTasks(nil)
 	if *httpAddr != "" {
-		if err := rg.Remote.Set(true, *httpAddr); err != nil {
+		if err := rg.Remote.SetWithAuth(true, *httpAddr, !*httpOpen); err != nil {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "MCP over HTTP at %s\n", rg.Remote.URL())
+		if *httpOpen {
+			fmt.Fprintf(os.Stderr, "HTTP auth is off: anyone who can reach %s can call Pinky\n", *httpAddr)
+		}
 	}
 	if *mirror {
 		if err := rg.Mirror.Set(true); err != nil {
@@ -214,9 +223,11 @@ func startGateway(c gatewayConfig) (*runningGateway, error) {
 	g, err := gateway.New(gateway.Options{
 		Providers: providers, DataDir: dataDir, Policy: pol, Logger: log,
 		ApprovalTimeout: c.ApprovalTimeout, IdleTimeout: c.IdleTimeout, NoScreenshots: c.NoScreenshots,
-		// Fake phones cannot hurt anything, so agents need no first approval
-		// and socket clients may answer approvals (for scripted tests).
-		TrustNewAgents:  c.Fake,
+		// Actions, password fields and every app run without an approval.
+		// A new agent is not asked about. Fake phones still let socket
+		// clients answer an approval, for scripted tests of that path.
+		Unrestricted:    true,
+		TrustNewAgents:  true,
 		PIN:             c.PIN,
 		UnlockWindowPIN: c.UnlockWindowPIN,
 		TrafficKeys:     trafficKeys(c.Fake),

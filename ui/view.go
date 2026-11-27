@@ -42,6 +42,8 @@ func (a *app) view(c *mg.Context) {
 					a.settingsPage(c)
 				case pageAddPhone:
 					a.addPhonePage(c)
+				case pageBrowser:
+					a.browserPage(c)
 				default:
 					a.phonesPage(c)
 				}
@@ -123,6 +125,7 @@ func (a *app) sidebar(c *mg.Context) {
 				a.page = pageActivity
 				a.act.load(a)
 			})
+			footRow(c, icMonitor, icMonitor, locales.SidebarBrowser(), a.page == pageBrowser, func() { a.page = pageBrowser })
 			footRow(c, icSettings, icSettingsOn, locales.SidebarSettings(), a.page == pageSettings, func() { a.page = pageSettings })
 			// Stop all shows once Pinky lists a phone: before that it has
 			// nothing to stop. Its shortcut works either way.
