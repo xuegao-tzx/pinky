@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -81,6 +82,28 @@ func TestBrowserTools(t *testing.T) {
 	}
 	if err := s.Scroll(context.Background(), 200); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestScreenshotRejectsAnEmptyPNG(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, data := range [][]byte{nil, {}, []byte("not a png"), {0x89, 'P', 'N', 'G'}} {
+		eng := &fakeEngine{png: data}
+		s.UseEngine(eng)
+		if _, err := s.Screenshot(context.Background()); err == nil {
+			t.Fatalf("accepted %d bytes", len(data))
+		}
+	}
+	entries, _ := os.ReadDir(filepath.Join(dir, "shots"))
+	if len(entries) != 0 {
+		t.Fatalf("wrote %d files", len(entries))
+	}
+	if !ValidPNG([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0}) {
+		t.Fatal("a header is a PNG")
 	}
 }
 

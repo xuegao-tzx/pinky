@@ -1,7 +1,9 @@
 package deskweb
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -88,10 +90,21 @@ func (s *Session) CloseTab(ctx context.Context, id string) error {
 	return nil
 }
 
+// pngHeader is the eight bytes every PNG file starts with.
+var pngHeader = []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}
+
+// ValidPNG reports whether data is a non-empty PNG image.
+func ValidPNG(data []byte) bool {
+	return len(data) >= len(pngHeader) && bytes.Equal(data[:len(pngHeader)], pngHeader)
+}
+
 func (s *Session) saveShot(e Engine, ctx context.Context, id string) (string, error) {
 	data, err := e.Screenshot(ctx, id)
 	if err != nil {
 		return "", err
+	}
+	if !ValidPNG(data) {
+		return "", fmt.Errorf("screenshot is empty or not a PNG (%d bytes)", len(data))
 	}
 	dir := s.dir
 	if dir == "" {

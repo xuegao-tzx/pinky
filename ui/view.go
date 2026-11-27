@@ -34,6 +34,7 @@ func (a *app) view(c *mg.Context) {
 	mg.Row(c).Fill().AlignItems(mg.Stretch).Children(func() {
 		a.sidebar(c)
 		mg.Column(c).Grow(1).MinWidth(0).Background(p.bg).Children(func() {
+			a.standbyBrowser(c)
 			// A page fades in where the last one was.
 			mg.Column(c.Key(a.page)).Grow(1).MinHeight(0).Transition(swapIn()).Children(func() {
 				switch a.page {

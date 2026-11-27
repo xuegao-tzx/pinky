@@ -187,10 +187,45 @@ func (a *app) ensureBrowser() {
 		}
 		return
 	}
+	h.poke = func() {
+		if a.main != nil {
+			a.main.Invalidate()
+		}
+	}
+	h.show = a.presentBrowser
 	a.browser = h
 	if a.opt.Automation != nil && a.opt.Automation.Web != nil {
 		a.opt.Automation.Web.UseEngine(h)
 	}
+}
+
+// presentBrowser shows the Browser page so its web view is given a size.
+func (a *app) presentBrowser(ctx context.Context) error {
+	done := make(chan struct{})
+	a.post(func() {
+		a.page = pageBrowser
+		close(done)
+	})
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// standbyBrowser keeps the active web view at a real size while another
+// page is showing. It is fully transparent, so the page on top is what
+// the person sees, and a snapshot still has a viewport.
+func (a *app) standbyBrowser(c *mg.Context) {
+	if a.browser == nil || a.page == pageBrowser {
+		return
+	}
+	view, _ := a.browser.views()
+	if view == nil {
+		return
+	}
+	mg.WebView(c, view).Absolute().Left(0).Top(0).Width(browserViewportW).Height(browserViewportH).Opacity(0).PassThrough()
 }
 
 func (a *app) browserPage(c *mg.Context) {

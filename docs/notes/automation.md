@@ -64,7 +64,7 @@ The model of that task sees the phone tools, `open_app_route`, the skill tools a
 
 The sidebar **Browser** places a native web view in Pinky's window: WKWebView on macOS, WebView2 on Windows and WebKit on Linux, through MyGo's `Window.NewWebView` and `ui.WebView`. The window must show native content. No extra cgo is added, so `CGO_ENABLED=0` still builds. On macOS the configuration's default `WKWebsiteDataStore` keeps cookies and the login after Pinky quits.
 
-The page has an address bar, back, forward, reload, saved addresses (`webview.json`) and tabs (new, switch, close). The tools drive that view, not an external Chrome window:
+The page has an address bar, back, forward, reload, saved addresses (`webview.json`) and tabs (new, switch, close). While another page is showing, the active web view stays in the layout at 1280×800 and fully transparent, so a snapshot and a click still have a viewport. If it is still 0×0, the tool shows the Browser page and waits for a non-zero size. `webview_screenshot` is kept only when the bytes are a PNG; an empty capture is an error. The tools drive that view, not an external Chrome window:
 
 | Tool | What it does |
 | --- | --- |

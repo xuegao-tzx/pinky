@@ -16,12 +16,23 @@ import (
 // browserHost is the browser embedded in Pinky's window. Each tab is a
 // native web view (WKWebView on macOS) sharing the default website data
 // store, so cookies and the login survive quitting Pinky.
+// browserViewport is the size the web view keeps while another page is
+// showing, so a snapshot and a click still have a layout.
+const (
+	browserViewportW = 1280
+	browserViewportH = 800
+)
+
 type browserHost struct {
 	mu     sync.Mutex
 	win    *mygo.Window
 	tabs   []*browserTab
 	active int
 	next   int
+	// poke asks the window to lay the web view out again.
+	poke func()
+	// show opens the Browser page when the web view is still 0×0.
+	show func(ctx context.Context) error
 }
 
 type browserTab struct {
@@ -207,9 +218,9 @@ func (h *browserHost) Content(ctx context.Context, id string) (deskweb.Page, err
 }
 
 func (h *browserHost) Click(ctx context.Context, id, selector, text string) (deskweb.Page, error) {
-	t := h.with(id)
-	if t == nil {
-		return deskweb.Page{}, fmt.Errorf("no tab")
+	t, err := h.ensureShown(ctx, id)
+	if err != nil {
+		return deskweb.Page{}, err
 	}
 	expr := fmt.Sprintf(clickJS, jsString(selector), jsString(text))
 	raw, err := t.view.Page().EvalContext(ctx, expr)
@@ -224,9 +235,9 @@ func (h *browserHost) Click(ctx context.Context, id, selector, text string) (des
 }
 
 func (h *browserHost) Type(ctx context.Context, id, selector, text, value string) (deskweb.Page, error) {
-	t := h.with(id)
-	if t == nil {
-		return deskweb.Page{}, fmt.Errorf("no tab")
+	t, err := h.ensureShown(ctx, id)
+	if err != nil {
+		return deskweb.Page{}, err
 	}
 	expr := fmt.Sprintf(typeJS, jsString(selector), jsString(text), jsString(value))
 	raw, err := t.view.Page().EvalContext(ctx, expr)
@@ -240,11 +251,11 @@ func (h *browserHost) Type(ctx context.Context, id, selector, text, value string
 }
 
 func (h *browserHost) Scroll(ctx context.Context, id string, dy int) error {
-	t := h.with(id)
-	if t == nil {
-		return fmt.Errorf("no tab")
+	t, err := h.ensureShown(ctx, id)
+	if err != nil {
+		return err
 	}
-	_, err := t.view.Page().EvalContext(ctx, fmt.Sprintf("window.scrollBy(0, %d); 'ok'", dy))
+	_, err = t.view.Page().EvalContext(ctx, fmt.Sprintf("window.scrollBy(0, %d); 'ok'", dy))
 	return err
 }
 
@@ -264,11 +275,117 @@ func (h *browserHost) Eval(ctx context.Context, id, expr string) (string, error)
 }
 
 func (h *browserHost) Screenshot(ctx context.Context, id string) ([]byte, error) {
+	t, err := h.ensureShown(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var last []byte
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		data, cerr := t.view.CapturePage()
+		if cerr != nil {
+			return nil, cerr
+		}
+		if deskweb.ValidPNG(data) {
+			return data, nil
+		}
+		last = data
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("screenshot is empty or not a PNG (%d bytes)", len(last))
+		}
+		if h.poke != nil {
+			h.poke()
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// ensureShown makes id the tab the window lays out, and waits until that
+// web view has a non-zero viewport. A page other than Browser keeps one
+// at a fixed size; if that is still 0×0, the Browser page is shown.
+func (h *browserHost) ensureShown(ctx context.Context, id string) (*browserTab, error) {
+	if err := h.focusTab(id); err != nil {
+		return nil, err
+	}
 	t := h.with(id)
 	if t == nil {
 		return nil, fmt.Errorf("no tab")
 	}
-	return t.view.CapturePage()
+	if h.poke != nil {
+		h.poke()
+	}
+	if h.waitSize(ctx, t, 400*time.Millisecond) {
+		return t, nil
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	if h.show != nil {
+		if err := h.show(ctx); err != nil {
+			return nil, err
+		}
+	}
+	if h.waitSize(ctx, t, 3*time.Second) {
+		return t, nil
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	return nil, fmt.Errorf("the embedded browser is 0×0, so it cannot be captured or clicked")
+}
+
+func (h *browserHost) waitSize(ctx context.Context, t *browserTab, d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for {
+		if h.hasSize(ctx, t) {
+			return true
+		}
+		if ctx.Err() != nil || time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(40 * time.Millisecond)
+	}
+}
+
+func (h *browserHost) hasSize(ctx context.Context, t *browserTab) bool {
+	if t == nil || t.view == nil || t.view.Page() == nil {
+		return false
+	}
+	raw, err := t.view.Page().EvalContext(ctx, "window.innerWidth + 'x' + window.innerHeight")
+	if err != nil {
+		return false
+	}
+	var w, ht int
+	if _, err := fmt.Sscanf(fmt.Sprint(raw), "%dx%d", &w, &ht); err != nil {
+		return false
+	}
+	return w > 0 && ht > 0
+}
+
+func (h *browserHost) focusTab(id string) error {
+	h.mu.Lock()
+	t := h.find(id)
+	if t == nil {
+		h.mu.Unlock()
+		return fmt.Errorf("no tab")
+	}
+	changed := h.activeTab() == nil || h.activeTab().id != t.id
+	if changed {
+		for i, tab := range h.tabs {
+			if tab.id == t.id {
+				h.active = i
+				break
+			}
+		}
+	}
+	h.mu.Unlock()
+	if changed && h.poke != nil {
+		h.poke()
+	}
+	return nil
 }
 
 func (h *browserHost) with(id string) *browserTab {
