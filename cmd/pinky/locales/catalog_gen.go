@@ -31841,14 +31841,14 @@ func (msgs Messages) UnlockWindowConfirming() string {
 	return Catalog.Format(msgs.locale, "unlockWindowConfirming", nil)
 }
 
-// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks for up to 8 hours. Agents never see the PIN."
+// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks until you end it. It does not expire. Agents never see th…"
 // in the language the app shows.
 //
 // Under the switch Unlock without asking (unlockWindowTitle), in Settings
 // › Phones and in the ⋯ menu under a phone's mirror, while it is off.
 func UnlockWindowDesc() string { return In(i18n.Locale()).UnlockWindowDesc() }
 
-// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks for up to 8 hours. Agents never see the PIN."
+// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks until you end it. It does not expire. Agents never see th…"
 // in the language of msgs.
 //
 // Under the switch Unlock without asking (unlockWindowTitle), in Settings
@@ -36299,4 +36299,110 @@ func RemoteAuthDesc() string { return In(i18n.Locale()).RemoteAuthDesc() }
 // Settings › Automation: the note under Require the agent token.
 func (msgs Messages) RemoteAuthDesc() string {
 	return Catalog.Format(msgs.locale, "remoteAuthDesc", nil)
+}
+
+// UnlockWindowForeverLine says "On until you end it. It does not expire."
+// in the language the app shows.
+//
+// Unlock without asking, while it does not expire: the line under the
+// switch.
+func UnlockWindowForeverLine() string { return In(i18n.Locale()).UnlockWindowForeverLine() }
+
+// UnlockWindowForeverLine says "On until you end it. It does not expire."
+// in the language of msgs.
+//
+// Unlock without asking, while it does not expire: the line under the
+// switch.
+func (msgs Messages) UnlockWindowForeverLine() string {
+	return Catalog.Format(msgs.locale, "unlockWindowForeverLine", nil)
+}
+
+// UnlockWindowBannerForever says "Unlock without asking"
+// in the language the app shows.
+//
+// The strip under the phone while unlock without asking does not expire.
+func UnlockWindowBannerForever() string { return In(i18n.Locale()).UnlockWindowBannerForever() }
+
+// UnlockWindowBannerForever says "Unlock without asking"
+// in the language of msgs.
+//
+// The strip under the phone while unlock without asking does not expire.
+func (msgs Messages) UnlockWindowBannerForever() string {
+	return Catalog.Format(msgs.locale, "unlockWindowBannerForever", nil)
+}
+
+// UnlockWindowOnForeverToast says "Unlock without asking is on for {name}. It does not expire."
+// in the language the app shows.
+//
+// Toast after unlock without asking is turned on with no expiry. name is
+// the phone.
+func UnlockWindowOnForeverToast(name string) string {
+	return In(i18n.Locale()).UnlockWindowOnForeverToast(name)
+}
+
+// UnlockWindowOnForeverToast says "Unlock without asking is on for {name}. It does not expire."
+// in the language of msgs.
+//
+// Toast after unlock without asking is turned on with no expiry. name is
+// the phone.
+func (msgs Messages) UnlockWindowOnForeverToast(name string) string {
+	return Catalog.Format(msgs.locale, "unlockWindowOnForeverToast", map[string]any{"name": name})
+}
+
+// BrowserNewTab says "New tab"
+// in the language the app shows.
+//
+// Embedded browser: the button that opens another tab.
+func BrowserNewTab() string { return In(i18n.Locale()).BrowserNewTab() }
+
+// BrowserNewTab says "New tab"
+// in the language of msgs.
+//
+// Embedded browser: the button that opens another tab.
+func (msgs Messages) BrowserNewTab() string {
+	return Catalog.Format(msgs.locale, "browserNewTab", nil)
+}
+
+// BrowserCloseTab says "Close tab"
+// in the language the app shows.
+//
+// Embedded browser: the button that closes the current tab.
+func BrowserCloseTab() string { return In(i18n.Locale()).BrowserCloseTab() }
+
+// BrowserCloseTab says "Close tab"
+// in the language of msgs.
+//
+// Embedded browser: the button that closes the current tab.
+func (msgs Messages) BrowserCloseTab() string {
+	return Catalog.Format(msgs.locale, "browserCloseTab", nil)
+}
+
+// BrowserEmbedded says "The page is inside this window. Sign in here; Pinky keeps the login."
+// in the language the app shows.
+//
+// Embedded browser: the note that the page is inside Pinky's window and the
+// login is kept.
+func BrowserEmbedded() string { return In(i18n.Locale()).BrowserEmbedded() }
+
+// BrowserEmbedded says "The page is inside this window. Sign in here; Pinky keeps the login."
+// in the language of msgs.
+//
+// Embedded browser: the note that the page is inside Pinky's window and the
+// login is kept.
+func (msgs Messages) BrowserEmbedded() string {
+	return Catalog.Format(msgs.locale, "browserEmbedded", nil)
+}
+
+// BrowserNoWindow says "The browser is embedded in Pinky's window. Open Pinky to use it."
+// in the language the app shows.
+//
+// Embedded browser tools, when Pinky's window is not open.
+func BrowserNoWindow() string { return In(i18n.Locale()).BrowserNoWindow() }
+
+// BrowserNoWindow says "The browser is embedded in Pinky's window. Open Pinky to use it."
+// in the language of msgs.
+//
+// Embedded browser tools, when Pinky's window is not open.
+func (msgs Messages) BrowserNoWindow() string {
+	return Catalog.Format(msgs.locale, "browserNoWindow", nil)
 }

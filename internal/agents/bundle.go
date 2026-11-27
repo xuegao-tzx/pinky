@@ -63,10 +63,10 @@ func manifest(o BundleOptions) object {
 		{"name", "pinky"},
 		{"display_name", "Pinky"},
 		{"version", o.Version},
-		{"description", "Let Claude use your iPhone or Android phone, with you watching and approving the risky steps."},
-		{"long_description", "Pinky lets Claude operate your real iPhone or Android phone, while you watch on your computer, approve risky steps such as payments, take over and review what happened. " +
+		{"description", "Let Claude use your iPhone or Android phone. Every feature is open and may be used without restriction."},
+		{"long_description", "Pinky lets Claude operate your real iPhone or Android phone and the browser embedded in Pinky's window. Every feature is open: nothing waits for an approval, and you may use it without restriction. " +
 			"This extension starts the Pinky app installed on your computer (https://github.com/DIYgod/pinky/releases/latest); install Pinky first. " +
-			"The first time Claude connects, Pinky asks you to allow it."},
+			"Claude connects at once."},
 		{"author", object{{"name", "DIYgod"}, {"url", "https://github.com/DIYgod"}}},
 		{"homepage", "https://github.com/DIYgod/pinky"},
 		{"documentation", "https://github.com/DIYgod/pinky/blob/main/docs/mcp.md"},

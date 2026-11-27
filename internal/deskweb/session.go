@@ -39,6 +39,10 @@ type Session struct {
 	page      Page
 	http      *httpBrowser
 	cdp       *cdpBrowser
+	engine    Engine
+	headless  bool
+	desktop   bool
+	engineErr error
 	lastShot  string
 }
 
@@ -63,14 +67,80 @@ func Open(dir string) (*Session, error) {
 	return s, nil
 }
 
-// Mode is "chrome" while DevTools is connected, otherwise "http".
+// Mode is "embedded" while the Pinky window's web view is connected,
+// "chrome" for a DevTools window, otherwise "http".
 func (s *Session) Mode() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.cdp != nil {
+	switch {
+	case s.engine != nil:
+		return "embedded"
+	case s.cdp != nil:
 		return "chrome"
+	case s.headless || s.desktop:
+		return "window"
 	}
 	return "http"
+}
+
+// UseEngine connects the session to the browser embedded in Pinky's window.
+// Tools then drive that web view instead of fetching pages.
+func (s *Session) UseEngine(e Engine) {
+	s.mu.Lock()
+	s.engine = e
+	s.mu.Unlock()
+}
+
+// MarkHeadless tells tools there is no Pinky window. They say so instead
+// of fetching pages. The desktop app does not call this.
+func (s *Session) MarkHeadless() {
+	s.mu.Lock()
+	s.headless = true
+	s.mu.Unlock()
+}
+
+// MarkDesktop tells tools the browser lives in Pinky's window. Until that
+// window's web view is connected, they say so instead of fetching pages.
+func (s *Session) MarkDesktop() {
+	s.mu.Lock()
+	s.desktop = true
+	s.mu.Unlock()
+}
+
+// FailEngine records that the window could not create its web view, so
+// tools report that instead of fetching pages.
+func (s *Session) FailEngine(err error) {
+	s.mu.Lock()
+	s.engineErr = err
+	s.mu.Unlock()
+}
+
+func (s *Session) engineNow() Engine {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.engine
+}
+
+func (s *Session) noWindow() error {
+	s.mu.Lock()
+	headless := s.headless
+	desktop := s.desktop
+	engine := s.engine
+	fail := s.engineErr
+	s.mu.Unlock()
+	if engine != nil {
+		return nil
+	}
+	if fail != nil {
+		return fail
+	}
+	if headless {
+		return errors.New("the browser is embedded in Pinky's window; open Pinky to use it")
+	}
+	if desktop {
+		return errors.New("the browser embedded in Pinky's window is still starting")
+	}
+	return nil
 }
 
 // UseChrome opens a Chrome or Chromium window Pinky controls. The person
@@ -107,8 +177,19 @@ func (s *Session) Close() {
 	}
 }
 
-// Navigate opens url. The history gains it.
+// Navigate opens url in the active tab. The history gains it.
 func (s *Session) Navigate(ctx context.Context, raw string) (Page, error) {
+	return s.NavigateTab(ctx, "", raw)
+}
+
+// NavigateTab opens url in tab id, or the active tab when id is empty.
+func (s *Session) NavigateTab(ctx context.Context, id, raw string) (Page, error) {
+	if e := s.engineNow(); e != nil {
+		return e.Navigate(ctx, id, raw)
+	}
+	if err := s.noWindow(); err != nil {
+		return Page{}, err
+	}
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return Page{}, errors.New("deskweb: empty url")
@@ -142,10 +223,27 @@ func (s *Session) navigate(ctx context.Context, raw string) (Page, error) {
 }
 
 // Back and Forward move through the addresses this session opened.
-func (s *Session) Back(ctx context.Context) (Page, error)    { return s.shift(ctx, -1) }
-func (s *Session) Forward(ctx context.Context) (Page, error) { return s.shift(ctx, 1) }
+func (s *Session) Back(ctx context.Context) (Page, error)    { return s.BackTab(ctx, "") }
+func (s *Session) Forward(ctx context.Context) (Page, error) { return s.ForwardTab(ctx, "") }
 
-func (s *Session) shift(ctx context.Context, d int) (Page, error) {
+// BackTab and ForwardTab move one tab, or the active tab when id is empty.
+func (s *Session) BackTab(ctx context.Context, id string) (Page, error) {
+	return s.shift(ctx, id, -1)
+}
+func (s *Session) ForwardTab(ctx context.Context, id string) (Page, error) {
+	return s.shift(ctx, id, 1)
+}
+
+func (s *Session) shift(ctx context.Context, id string, d int) (Page, error) {
+	if e := s.engineNow(); e != nil {
+		if d < 0 {
+			return e.Back(ctx, id)
+		}
+		return e.Forward(ctx, id)
+	}
+	if err := s.noWindow(); err != nil {
+		return Page{}, err
+	}
 	s.mu.Lock()
 	next := s.at + d
 	if next < 0 || next >= len(s.hist) {
@@ -166,7 +264,16 @@ func (s *Session) shift(ctx context.Context, d int) (Page, error) {
 }
 
 // Reload fetches the current address again.
-func (s *Session) Reload(ctx context.Context) (Page, error) {
+func (s *Session) Reload(ctx context.Context) (Page, error) { return s.ReloadTab(ctx, "") }
+
+// ReloadTab reloads tab id, or the active tab when id is empty.
+func (s *Session) ReloadTab(ctx context.Context, id string) (Page, error) {
+	if e := s.engineNow(); e != nil {
+		return e.Reload(ctx, id)
+	}
+	if err := s.noWindow(); err != nil {
+		return Page{}, err
+	}
 	s.mu.Lock()
 	raw := s.page.URL
 	s.mu.Unlock()
@@ -183,15 +290,33 @@ func (s *Session) Reload(ctx context.Context) (Page, error) {
 	return page, nil
 }
 
-// State is the current address and title.
+// State is the active tab's address and title.
 func (s *Session) State() (url, title string) {
+	if e := s.engineNow(); e != nil {
+		if tabs, err := e.Tabs(context.Background()); err == nil {
+			for _, t := range tabs {
+				if t.Active {
+					return t.URL, t.Title
+				}
+			}
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.page.URL, s.page.Title
 }
 
 // Content is the current page.
-func (s *Session) Content(ctx context.Context) (Page, error) {
+func (s *Session) Content(ctx context.Context) (Page, error) { return s.ContentTab(ctx, "") }
+
+// ContentTab reads tab id, or the active tab when id is empty.
+func (s *Session) ContentTab(ctx context.Context, id string) (Page, error) {
+	if e := s.engineNow(); e != nil {
+		return e.Content(ctx, id)
+	}
+	if err := s.noWindow(); err != nil {
+		return Page{}, err
+	}
 	s.mu.Lock()
 	cdp := s.cdp
 	page := s.page
@@ -215,6 +340,17 @@ func (s *Session) Content(ctx context.Context) (Page, error) {
 // Click activates an element by CSS selector or by its text. A link it
 // opens is added to the session history, so Back returns to this page.
 func (s *Session) Click(ctx context.Context, selector, text string) (Page, error) {
+	return s.ClickTab(ctx, "", selector, text)
+}
+
+// ClickTab clicks in tab id, or the active tab when id is empty.
+func (s *Session) ClickTab(ctx context.Context, id, selector, text string) (Page, error) {
+	if e := s.engineNow(); e != nil {
+		return e.Click(ctx, id, selector, text)
+	}
+	if err := s.noWindow(); err != nil {
+		return Page{}, err
+	}
 	s.mu.Lock()
 	cdp := s.cdp
 	before := s.page.URL
@@ -244,6 +380,17 @@ func (s *Session) Click(ctx context.Context, selector, text string) (Page, error
 
 // Type writes value into the element.
 func (s *Session) Type(ctx context.Context, selector, text, value string) (Page, error) {
+	return s.TypeTab(ctx, "", selector, text, value)
+}
+
+// TypeTab types into tab id, or the active tab when id is empty.
+func (s *Session) TypeTab(ctx context.Context, id, selector, text, value string) (Page, error) {
+	if e := s.engineNow(); e != nil {
+		return e.Type(ctx, id, selector, text, value)
+	}
+	if err := s.noWindow(); err != nil {
+		return Page{}, err
+	}
 	s.mu.Lock()
 	cdp := s.cdp
 	s.mu.Unlock()
@@ -264,7 +411,16 @@ func (s *Session) Type(ctx context.Context, selector, text, value string) (Page,
 }
 
 // Scroll moves the page by dy pixels.
-func (s *Session) Scroll(ctx context.Context, dy int) error {
+func (s *Session) Scroll(ctx context.Context, dy int) error { return s.ScrollTab(ctx, "", dy) }
+
+// ScrollTab scrolls tab id, or the active tab when id is empty.
+func (s *Session) ScrollTab(ctx context.Context, id string, dy int) error {
+	if e := s.engineNow(); e != nil {
+		return e.Scroll(ctx, id, dy)
+	}
+	if err := s.noWindow(); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	cdp := s.cdp
 	s.mu.Unlock()
@@ -278,6 +434,17 @@ func (s *Session) Scroll(ctx context.Context, dy int) error {
 // Eval runs JavaScript in the page and returns its value as text. Without
 // Chrome, only the document fields documented on the tool are answered.
 func (s *Session) Eval(ctx context.Context, expr string) (string, error) {
+	return s.EvalTab(ctx, "", expr)
+}
+
+// EvalTab evaluates JavaScript in tab id, or the active tab when id is empty.
+func (s *Session) EvalTab(ctx context.Context, id, expr string) (string, error) {
+	if e := s.engineNow(); e != nil {
+		return e.Eval(ctx, id, expr)
+	}
+	if err := s.noWindow(); err != nil {
+		return "", err
+	}
 	s.mu.Lock()
 	cdp := s.cdp
 	s.mu.Unlock()
@@ -290,6 +457,17 @@ func (s *Session) Eval(ctx context.Context, expr string) (string, error) {
 // Screenshot writes a PNG of the page and returns its path. Without Chrome
 // the file is a note of the page text, still a path the task can report.
 func (s *Session) Screenshot(ctx context.Context) (string, error) {
+	return s.ScreenshotTab(ctx, "")
+}
+
+// ScreenshotTab writes a PNG of tab id, or of the active tab when id is empty.
+func (s *Session) ScreenshotTab(ctx context.Context, id string) (string, error) {
+	if e := s.engineNow(); e != nil {
+		return s.saveShot(e, ctx, id)
+	}
+	if err := s.noWindow(); err != nil {
+		return "", err
+	}
 	s.mu.Lock()
 	dir := s.dir
 	cdp := s.cdp

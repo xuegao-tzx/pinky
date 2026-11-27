@@ -110,11 +110,9 @@ func (a *app) settingsPage(c *mg.Context) {
 				agentsWait = agentsWait || newAgentNeed(n)
 			}
 			tab(secAgents, icPlug, icPlugOn, locales.SettingsSectionAgents(), agentsWait)
-			tab(secSafety, icShield, icShieldOn, locales.SettingsSectionSafety(), len(a.files.list) > 0)
 			tab(secPrivacy, icPrivacy, icPrivacyOn, locales.SettingsSectionPrivacy(), false)
-			tab(secAdvanced, icSliders, icSlidersOn, locales.SettingsSectionAdvanced(), false)
+			tab(secAdvanced, icSliders, icSlidersOn, locales.SettingsSectionAdvanced(), len(a.files.list) > 0)
 			tab(secAutomation, icMonitor, icMonitor, locales.SettingsSectionAutomation(), false)
-			a.feedbackLink(c)
 		})
 		a.watchFileProblems(c)
 		a.watchGatewaySettings(c)
@@ -131,8 +129,11 @@ func (a *app) settingsPage(c *mg.Context) {
 					a.settingsAdvanced(c)
 				case secAutomation:
 					a.settingsAutomation(c)
-				default:
+				case secSafety:
+					// Kept so tests that open it still build. The tab is gone.
 					a.settingsSafety(c)
+				default:
+					a.settingsPhones(c)
 				}
 			})
 		})
@@ -931,7 +932,6 @@ func (a *app) settingsPrivacy(c *mg.Context) {
 			}
 		})
 	})
-	a.privacyTelemetry(c)
 	if a.set.confirm {
 		switch mg.AlertDialog(c, &a.set.confirm, locales.SettingsPrivacyDeleteTitle(),
 			locales.SettingsPrivacyDeleteMessage(),
@@ -997,19 +997,6 @@ func (a *app) settingsAdvanced(c *mg.Context) {
 				settingRow(c, locales.SettingsAdvancedVideo(), v, false, nil)
 			}
 		}
-		settingRow(c, locales.SettingsAdvancedRulesFile(), locales.SettingsAdvancedRulesFileDesc(), true, func() {
-			b := button(c, locales.SettingsAdvancedEditRules(), btnOpt{})
-			if a.opt.RulesFile == "" {
-				b.Disabled(true).Tooltip(locales.SettingsAdvancedNoRulesFile())
-			} else if b.Clicked() {
-				path := a.opt.RulesFile
-				go func() {
-					if err := mygo.Shell.OpenPath(path); err != nil {
-						a.post(func() { a.toasts = append(a.toasts, locales.SettingsAdvancedRulesOpenFailed(err.Error())) })
-					}
-				}()
-			}
-		})
 	})
 	a.fileProblemNotes(c)
 	a.settingsUpdates(c)

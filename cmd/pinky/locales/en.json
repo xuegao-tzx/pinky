@@ -11652,7 +11652,7 @@
   "@unlockWindowConfirming": {
     "description": "Under the switch Unlock without asking (unlockWindowTitle) while the system asks the person to confirm with Touch ID, Windows Hello or the keyring's password."
   },
-  "unlockWindowDesc": "Confirm once, and Pinky unlocks the phone for agents' tasks for up to 8 hours. Agents never see the PIN.",
+  "unlockWindowDesc": "Confirm once, and Pinky unlocks the phone for agents' tasks until you end it. It does not expire. Agents never see the PIN.",
   "@unlockWindowDesc": {
     "description": "Under the switch Unlock without asking (unlockWindowTitle), in Settings › Phones and in the ⋯ menu under a phone's mirror, while it is off."
   },
@@ -13241,5 +13241,33 @@
   "remoteAuthDesc": "Off lets any client that can reach the address call Pinky. Leave it on outside a network you trust.",
   "@remoteAuthDesc": {
     "description": "Settings › Automation: the note under Require the agent token."
+  },
+  "unlockWindowForeverLine": "On until you end it. It does not expire.",
+  "unlockWindowBannerForever": "Unlock without asking · on",
+  "unlockWindowOnForeverToast": "Unlock without asking is on for {name}. It does not expire.",
+  "browserNewTab": "New tab",
+  "browserCloseTab": "Close tab",
+  "browserEmbedded": "The page is inside this window. Sign in here; Pinky keeps the login.",
+  "browserNoWindow": "The browser is embedded in Pinky's window. Open Pinky to use it.",
+  "@unlockWindowForeverLine": {
+    "description": "Unlock without asking, while it does not expire: the line under the switch."
+  },
+  "@unlockWindowBannerForever": {
+    "description": "The strip under the phone while unlock without asking does not expire."
+  },
+  "@unlockWindowOnForeverToast": {
+    "description": "Toast after unlock without asking is turned on with no expiry. name is the phone."
+  },
+  "@browserNewTab": {
+    "description": "Embedded browser: the button that opens another tab."
+  },
+  "@browserCloseTab": {
+    "description": "Embedded browser: the button that closes the current tab."
+  },
+  "@browserEmbedded": {
+    "description": "Embedded browser: the note that the page is inside Pinky's window and the login is kept."
+  },
+  "@browserNoWindow": {
+    "description": "Embedded browser tools, when Pinky's window is not open."
   }
 }

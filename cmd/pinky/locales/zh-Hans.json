@@ -1934,7 +1934,7 @@
   "unlockWindowCancel": "取消",
   "unlockWindowChanged": "{name} 的免确认解锁仍未打开：你确认期间它被关掉了，或者设置、手机有了变化。",
   "unlockWindowConfirming": "等待你确认…",
-  "unlockWindowDesc": "确认一次后，Pinky 会在最长 8 小时内为智能体的任务解锁手机。智能体看不到 PIN 码。",
+  "unlockWindowDesc": "确认一次后，Pinky 会替智能体解锁这台手机，直到你自己结束。它不会过期。智能体看不到 PIN 码。",
   "unlockWindowEnd": "结束",
   "unlockWindowEndLabel": "结束 {name} 的免确认解锁",
   "unlockWindowEndWhat": "结束 {name} 的免确认解锁",
@@ -2215,5 +2215,12 @@
   "browserWindow": "打开浏览器窗口",
   "browserWindowOpen": "Pinky 的浏览器窗口已打开。在那里登录；工具操作的是同一个页面。",
   "remoteAuthToggle": "要求智能体令牌",
-  "remoteAuthDesc": "关闭后，能访问这个地址的客户端都可以调用 Pinky。只在你信任的网络里关闭。"
+  "remoteAuthDesc": "关闭后，能访问这个地址的客户端都可以调用 Pinky。只在你信任的网络里关闭。",
+  "unlockWindowForeverLine": "一直开着，直到你结束。不会过期。",
+  "unlockWindowBannerForever": "免确认解锁 · 开着",
+  "unlockWindowOnForeverToast": "已为 {name} 打开免确认解锁，不会过期。",
+  "browserNewTab": "新标签页",
+  "browserCloseTab": "关闭标签页",
+  "browserEmbedded": "网页就在这个窗口里。在这里登录，Pinky 会记住登录状态。",
+  "browserNoWindow": "浏览器嵌在 Pinky 的窗口里。请打开 Pinky 再使用。"
 }

@@ -16,6 +16,7 @@ func iconPNG() []byte { return assets.Icon256 }
 // view builds the main window: the sidebar and the page it chose.
 func (a *app) view(c *mg.Context) {
 	p := applyTheme(c)
+	a.ensureBrowser()
 	a.buildSeq++
 	a.unseen = c.WindowHidden() || time.Since(a.hidAt) < hideSettle
 	for _, msg := range a.toasts {
@@ -50,7 +51,6 @@ func (a *app) view(c *mg.Context) {
 			})
 		})
 	})
-	a.telemetryDialogs(c)
 	a.updateDialogs(c)
 	a.shotDialog(c)
 	a.removeDialog(c)

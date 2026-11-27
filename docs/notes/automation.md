@@ -62,10 +62,19 @@ The model of that task sees the phone tools, `open_app_route`, the skill tools a
 
 ## Embedded browser
 
-`internal/deskweb` is the page. Settings and the sidebar **Browser** share one session: address, back, forward, reload, saved addresses in `webview.json`, and cookies of the fetch path.
+The sidebar **Browser** places a native web view in Pinky's window: WKWebView on macOS, WebView2 on Windows and WebKit on Linux, through MyGo's `Window.NewWebView` and `ui.WebView`. The window must show native content. No extra cgo is added, so `CGO_ENABLED=0` still builds. On macOS the configuration's default `WKWebsiteDataStore` keeps cookies and the login after Pinky quits.
 
-- Without Chrome, Pinky fetches the HTML and lists links, buttons and fields. `webview_eval` answers `document.title`, `document.URL`, `document.body.innerText` and `document.querySelector(sel).textContent` or `.value`. A screenshot is a text file of that summary.
-- **Open browser window**, or `PINKY_WEBVIEW=chrome`, starts Chrome, Chromium or Edge (`PINKY_CHROME` names the program) with a user-data directory under Pinky's data folder and a DevTools port. The person signs in in that window. The tools then use the DevTools protocol on the same page: navigation, DOM summary, click, type, scroll, arbitrary JavaScript and a PNG screenshot.
+The page has an address bar, back, forward, reload, saved addresses (`webview.json`) and tabs (new, switch, close). The tools drive that view, not an external Chrome window:
+
+| Tool | What it does |
+| --- | --- |
+| `webview_navigate`, `webview_back`, `webview_forward`, `webview_reload` | Move a tab. `tab` empty is the active tab |
+| `webview_state`, `webview_content` | URL, title, text and interactive elements |
+| `webview_click`, `webview_type`, `webview_scroll`, `webview_eval` | Act on the rendered page |
+| `webview_screenshot` | A PNG of the rendered page |
+| `webview_tabs`, `webview_new_tab`, `webview_switch_tab`, `webview_close_tab` | List, open, show and close tabs |
+
+The desktop app marks the session as desktop and, once the window exists, connects the web view (`UseEngine`). Remote MCP served by that process uses the same session. `pinky daemon` has no window: it marks the session headless, and the tools say to open Pinky instead of fetching the page. Unit tests that do not set an engine still use the HTTP fetch path.
 
 A task can use the phone and this page together: the model calls `webview_*` and `phone_*` in one run.
 
@@ -95,4 +104,4 @@ PINKY_SIGN_IDENTITY="$PINKY_SIGN_IDENTITY" make release
 
 ## Tests
 
-`go test ./internal/policy ./internal/skills ./internal/approutes ./internal/deskweb ./internal/mcp ./internal/pilot ./cmd/pinky` covers the open policy, skill import and `skill_run`, route placeholders, the fetch browser, `open_app_route` on a demo phone, the new tool list, and the daemon end to end (a payment and a password field no longer wait). Chrome itself is not started in those tests.
+`go test ./internal/policy ./internal/skills ./internal/approutes ./internal/deskweb ./internal/mcp ./internal/pilot ./cmd/pinky` covers the open policy, skill import and `skill_run`, route placeholders, the fetch browser, the embedded-engine path (a PNG screenshot and a named tab), `open_app_route` on a demo phone, the new tool list, and the daemon end to end (a payment and a password field no longer wait). The native web view is not started in those tests.

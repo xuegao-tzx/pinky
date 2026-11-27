@@ -74,11 +74,6 @@ func runApp(args []string) error {
 	}
 	c.Log = slog.New(slog.NewTextHandler(logWriter{file: logFile, console: os.Stderr}, &slog.HandlerOptions{Level: level}))
 	secret.SetLogger(c.Log)
-	crashes := captureCrashes(dirs, "app", c.Log)
-	// Not a plain Stop: a panic runs deferred calls, and a Stop removed the
-	// crash file before the runtime wrote the panic to it.
-	defer func() { crashes.Exit(recover()) }()
-	c.Crashes = crashes
 	// Opened by the person, Pinky may be started by agents again
 	// (quitmark.go), even when another Pinky shows its window instead.
 	appStarted(dirs, *background, c.Fake, c.Log)
@@ -131,8 +126,6 @@ func runApp(args []string) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	tel := startTelemetry(ctx, rg, crashes, settings, "app", c.Fake, c.Log)
-	defer tel.Close()
 	// `pinky quit` quits the app as its menu would.
 	rg.srv.Quit = func() { mygo.App.Quit() }
 
@@ -141,6 +134,9 @@ func runApp(args []string) error {
 	// the notes the person keeps for it are this computer's own.
 	auto := openAutomation(rg, c.Log)
 	defer auto.Close()
+	if auto.Web != nil {
+		auto.Web.MarkDesktop()
+	}
 	memories, err := pilot.OpenMemories(filepath.Join(dirs.Data, "memory.json"))
 	if err != nil {
 		c.Log.Error("memory", "err", err)
@@ -212,7 +208,7 @@ func runApp(args []string) error {
 	}
 	defer signal.Stop(signals)
 	ready := false
-	err = ui.Run(clientAPI(rg, tel, c.Fake), ui.Options{
+	err = ui.Run(clientAPI(rg, c.Fake), ui.Options{
 		BindShow: func(f func()) { show.Store(&f) },
 		Version:  version,
 		Theme:    *theme,
@@ -229,7 +225,6 @@ func runApp(args []string) error {
 			// confirms meanwhile must not open after (pinSource.windowPIN).
 			unlock.on.Store(s.UnlockFromComputer)
 			applySettings(rg, old, s, c.Log)
-			applyTelemetry(tel, s)
 			stopADB.Store(s.StopADBOnQuit)
 			if err := saveSettings(settingsPath, s); err != nil {
 				c.Log.Warn("save settings", "err", err)
@@ -238,7 +233,6 @@ func runApp(args []string) error {
 		GatewaySettings: func(since int) (ui.Settings, int, bool) { return policySettings(rg, since) },
 		RulesFile:       dirs.Rules(),
 		AgentToken:      rg.srv.Token,
-		Telemetry:       tel,
 		Updates:         upd,
 		Changelog:       pinky.Changelog,
 		AgentSetup:      agentSetup(dirs),
@@ -516,6 +510,9 @@ func (p *pinSource) saved(deviceID string) (string, secret.Store, error) {
 
 // forHours says how long an unlock window lasts, for the prompt.
 func forHours(d time.Duration) string {
+	if d == 0 {
+		return "until you end it"
+	}
 	if h := int(d / time.Hour); h != 1 {
 		return fmt.Sprintf("for the next %d hours", h)
 	}

@@ -70,7 +70,12 @@ func (a *API) OpenUnlockWindow(deviceID string, length time.Duration) error {
 		a.mu.Unlock()
 		return gateway.ErrUnlockWindowEnded
 	}
-	d.unlockUntil, d.unlockRefused = a.opt.Now().Add(length), false
+	d.unlockRefused = false
+	if length == gateway.UnlockWindowForever {
+		d.unlockForever, d.unlockUntil = true, time.Time{}
+	} else {
+		d.unlockForever, d.unlockUntil = false, a.opt.Now().Add(length)
+	}
 	a.uw.opens = append(a.uw.opens, length)
 	a.mu.Unlock()
 	a.emit(gateway.Event{Kind: gateway.EventDevices, DeviceID: deviceID})
@@ -82,7 +87,7 @@ func (a *API) EndUnlockWindow(deviceID string) error {
 	a.mu.Lock()
 	a.uw.epoch++
 	if d := a.device(deviceID); d != nil {
-		d.unlockUntil, d.unlockRefused = time.Time{}, false
+		d.unlockUntil, d.unlockForever, d.unlockRefused = time.Time{}, false, false
 	}
 	a.mu.Unlock()
 	a.emit(gateway.Event{Kind: gateway.EventDevices, DeviceID: deviceID})
@@ -95,7 +100,7 @@ func (a *API) EndUnlockWindow(deviceID string) error {
 func (a *API) RefusePIN(deviceID string) {
 	a.mu.Lock()
 	if d := a.device(deviceID); d != nil {
-		d.unlockUntil, d.unlockRefused, d.locked = time.Time{}, true, true
+		d.unlockUntil, d.unlockForever, d.unlockRefused, d.locked = time.Time{}, false, true, true
 	}
 	a.mu.Unlock()
 	a.emit(gateway.Event{Kind: gateway.EventDevices, DeviceID: deviceID})

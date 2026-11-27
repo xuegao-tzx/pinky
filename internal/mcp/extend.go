@@ -19,6 +19,7 @@ var extraToolNames = []string{
 	"skill_list", "skill_read", "skill_run",
 	"webview_navigate", "webview_back", "webview_forward", "webview_reload", "webview_state",
 	"webview_content", "webview_click", "webview_type", "webview_scroll", "webview_eval", "webview_screenshot",
+	"webview_tabs", "webview_new_tab", "webview_switch_tab", "webview_close_tab",
 }
 
 func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
@@ -84,11 +85,11 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 		})
 
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_navigate", Title: "Open a page in the embedded browser",
-		Description: "Open url in Pinky's embedded browser. Returns the url, title, text and elements.",
+		Description: "Open url in the web view embedded in Pinky's window. tab is optional; empty is the active tab. Returns the url, title, text and elements. Every feature is open: use it without restriction.",
 		InputSchema: schema[webURLIn](nil), Annotations: act},
 		func(ctx context.Context, req *sdk.CallToolRequest, in webURLIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Navigate(ctx, in.URL)
+				p, err := s.web.NavigateTab(ctx, in.Tab, in.URL)
 				if err != nil {
 					return "", err
 				}
@@ -96,11 +97,11 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_back", Title: "Embedded browser back",
-		Description: "Go back in the embedded browser.",
-		InputSchema: schema[struct{}](nil), Annotations: act},
-		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
+		Description: "Go back in the web view embedded in Pinky's window. tab is optional; empty is the active tab.",
+		InputSchema: schema[webTabIn](nil), Annotations: act},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Back(ctx)
+				p, err := s.web.BackTab(ctx, in.ID)
 				if err != nil {
 					return "", err
 				}
@@ -108,11 +109,11 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_forward", Title: "Embedded browser forward",
-		Description: "Go forward in the embedded browser.",
-		InputSchema: schema[struct{}](nil), Annotations: act},
-		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
+		Description: "Go forward in the web view embedded in Pinky's window. tab is optional; empty is the active tab.",
+		InputSchema: schema[webTabIn](nil), Annotations: act},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Forward(ctx)
+				p, err := s.web.ForwardTab(ctx, in.ID)
 				if err != nil {
 					return "", err
 				}
@@ -120,11 +121,11 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_reload", Title: "Reload the embedded browser",
-		Description: "Reload the embedded browser's current page.",
-		InputSchema: schema[struct{}](nil), Annotations: act},
-		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
+		Description: "Reload a page in the web view embedded in Pinky's window. tab is optional; empty is the active tab.",
+		InputSchema: schema[webTabIn](nil), Annotations: act},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Reload(ctx)
+				p, err := s.web.ReloadTab(ctx, in.ID)
 				if err != nil {
 					return "", err
 				}
@@ -132,20 +133,30 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_state", Title: "Embedded browser address",
-		Description: "The embedded browser's current URL and title.",
+		Description: "The active tab of the web view embedded in Pinky's window: URL, title and mode.",
 		InputSchema: schema[struct{}](nil), Annotations: read},
 		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				u, title := s.web.State()
-				return fmt.Sprintf("url: %s\ntitle: %s\nmode: %s", u, title, s.web.Mode()), nil
+				tabs, err := s.web.Tabs(ctx)
+				if err != nil {
+					return "", err
+				}
+				u, title := "", ""
+				id := ""
+				for _, t := range tabs {
+					if t.Active {
+						u, title, id = t.URL, t.Title, t.ID
+					}
+				}
+				return fmt.Sprintf("url: %s\ntitle: %s\ntab: %s\nmode: %s", u, title, id, s.web.Mode()), nil
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_content", Title: "Read the embedded browser",
-		Description: "The embedded page: URL, title, visible text and the interactive elements (selector and text).",
-		InputSchema: schema[struct{}](nil), Annotations: read},
-		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
+		Description: "Read a page in the web view embedded in Pinky's window: URL, title, visible text and the interactive elements. tab is optional; empty is the active tab.",
+		InputSchema: schema[webTabIn](nil), Annotations: read},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Content(ctx)
+				p, err := s.web.ContentTab(ctx, in.ID)
 				if err != nil {
 					return "", err
 				}
@@ -153,11 +164,11 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_click", Title: "Click in the embedded browser",
-		Description: "Click an element by CSS selector or by text.",
+		Description: "Click an element in the web view embedded in Pinky's window, by CSS selector or by text. tab is optional; empty is the active tab.",
 		InputSchema: schema[webClickIn](nil), Annotations: act},
 		func(ctx context.Context, req *sdk.CallToolRequest, in webClickIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Click(ctx, in.Selector, in.Text)
+				p, err := s.web.ClickTab(ctx, in.Tab, in.Selector, in.Text)
 				if err != nil {
 					return "", err
 				}
@@ -165,11 +176,11 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_type", Title: "Type in the embedded browser",
-		Description: "Type into an element by CSS selector or by its text or placeholder.",
+		Description: "Type into an element in the web view embedded in Pinky's window, by CSS selector or by its text or placeholder. tab is optional; empty is the active tab.",
 		InputSchema: schema[webTypeIn](nil), Annotations: act},
 		func(ctx context.Context, req *sdk.CallToolRequest, in webTypeIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Type(ctx, in.Selector, in.Text, in.Value)
+				p, err := s.web.TypeTab(ctx, in.Tab, in.Selector, in.Text, in.Value)
 				if err != nil {
 					return "", err
 				}
@@ -177,34 +188,95 @@ func (s *Server) addExtraTools(srv *sdk.Server, remote bool) {
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_scroll", Title: "Scroll the embedded browser",
-		Description: "Scroll the embedded page by dy pixels (negative scrolls up).",
+		Description: "Scroll a page in the web view embedded in Pinky's window by dy pixels (negative scrolls up). tab is optional; empty is the active tab.",
 		InputSchema: schema[webScrollIn](nil), Annotations: act},
 		func(ctx context.Context, req *sdk.CallToolRequest, in webScrollIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				if err := s.web.Scroll(ctx, in.DY); err != nil {
+				if err := s.web.ScrollTab(ctx, in.Tab, in.DY); err != nil {
 					return "", err
 				}
 				return "scrolled", nil
 			}), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_eval", Title: "Run JavaScript in the embedded browser",
-		Description: "Evaluate JavaScript in the embedded page and return the value. Without Chrome, document.title, document.URL, document.body.innerText and document.querySelector(sel).textContent or .value work.",
+		Description: "Evaluate JavaScript in the web view embedded in Pinky's window and return the value. tab is optional; empty is the active tab. All features are open.",
 		InputSchema: schema[webEvalIn](nil), Annotations: act},
 		func(ctx context.Context, req *sdk.CallToolRequest, in webEvalIn) (*sdk.CallToolResult, any, error) {
-			return s.webDo(func() (string, error) { return s.web.Eval(ctx, in.Expression) }), nil, nil
+			return s.webDo(func() (string, error) { return s.web.EvalTab(ctx, in.Tab, in.Expression) }), nil, nil
 		})
 	sdk.AddTool(srv, &sdk.Tool{Name: "webview_screenshot", Title: "Screenshot the embedded browser",
-		Description: "Save a screenshot of the embedded page and return its path. With Chrome it is a PNG; otherwise a text capture of the page.",
-		InputSchema: schema[struct{}](nil), Annotations: read},
-		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
+		Description: "Save a PNG of the page rendered in the web view embedded in Pinky's window and return its path. tab is optional; empty is the active tab.",
+		InputSchema: schema[webTabIn](nil), Annotations: read},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
 			return s.webDo(func() (string, error) {
-				p, err := s.web.Screenshot(ctx)
+				p, err := s.web.ScreenshotTab(ctx, in.ID)
 				if err != nil {
 					return "", err
 				}
 				return "screenshot: " + p, nil
 			}), nil, nil
 		})
+	sdk.AddTool(srv, &sdk.Tool{Name: "webview_tabs", Title: "List embedded browser tabs",
+		Description: "List the tabs of the browser embedded in Pinky's window: id, url, title and which one is active.",
+		InputSchema: schema[struct{}](nil), Annotations: read},
+		func(ctx context.Context, req *sdk.CallToolRequest, in struct{}) (*sdk.CallToolResult, any, error) {
+			return s.webDo(func() (string, error) {
+				tabs, err := s.web.Tabs(ctx)
+				if err != nil {
+					return "", err
+				}
+				if len(tabs) == 0 {
+					return "no tabs", nil
+				}
+				var b strings.Builder
+				for _, t := range tabs {
+					on := ""
+					if t.Active {
+						on = " active"
+					}
+					fmt.Fprintf(&b, "%s%s\n  %s\n  %s\n", t.ID, on, t.Title, t.URL)
+				}
+				return strings.TrimRight(b.String(), "\n"), nil
+			}), nil, nil
+		})
+	sdk.AddTool(srv, &sdk.Tool{Name: "webview_new_tab", Title: "New embedded browser tab",
+		Description: "Open another tab in the browser embedded in Pinky's window. url is optional.",
+		InputSchema: schema[webURLIn](nil), Annotations: act},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webURLIn) (*sdk.CallToolResult, any, error) {
+			return s.webDo(func() (string, error) {
+				t, err := s.web.NewTab(ctx, in.URL)
+				if err != nil {
+					return "", err
+				}
+				return fmt.Sprintf("id: %s\nurl: %s\ntitle: %s", t.ID, t.URL, t.Title), nil
+			}), nil, nil
+		})
+	sdk.AddTool(srv, &sdk.Tool{Name: "webview_switch_tab", Title: "Switch embedded browser tab",
+		Description: "Show the tab id in the browser embedded in Pinky's window.",
+		InputSchema: schema[webTabIn](nil), Annotations: act},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
+			return s.webDo(func() (string, error) {
+				if err := s.web.SwitchTab(ctx, in.ID); err != nil {
+					return "", err
+				}
+				return "switched " + in.ID, nil
+			}), nil, nil
+		})
+	sdk.AddTool(srv, &sdk.Tool{Name: "webview_close_tab", Title: "Close embedded browser tab",
+		Description: "Close a tab in the browser embedded in Pinky's window. Omit id to close the active tab. The last tab stays open.",
+		InputSchema: schema[webTabIn](nil), Annotations: act},
+		func(ctx context.Context, req *sdk.CallToolRequest, in webTabIn) (*sdk.CallToolResult, any, error) {
+			return s.webDo(func() (string, error) {
+				if err := s.web.CloseTab(ctx, in.ID); err != nil {
+					return "", err
+				}
+				return "closed", nil
+			}), nil, nil
+		})
+}
+
+type webTabIn struct {
+	ID string `json:"id,omitempty" jsonschema:"The tab id from webview_tabs. Empty is the active tab."`
 }
 
 type routeIn struct {
@@ -241,25 +313,30 @@ type skillRunIn struct {
 
 type webURLIn struct {
 	URL string `json:"url" jsonschema:"The address to open."`
+	Tab string `json:"tab,omitempty" jsonschema:"Tab id from webview_tabs. Empty is the active tab."`
 }
 
 type webClickIn struct {
 	Selector string `json:"selector,omitempty" jsonschema:"A CSS selector, such as #lock."`
 	Text     string `json:"text,omitempty" jsonschema:"Text of the element, when there is no selector."`
+	Tab      string `json:"tab,omitempty" jsonschema:"Tab id from webview_tabs. Empty is the active tab."`
 }
 
 type webTypeIn struct {
 	Selector string `json:"selector,omitempty" jsonschema:"A CSS selector."`
 	Text     string `json:"text,omitempty" jsonschema:"Placeholder or label of the field."`
 	Value    string `json:"value" jsonschema:"The text to type."`
+	Tab      string `json:"tab,omitempty" jsonschema:"Tab id from webview_tabs. Empty is the active tab."`
 }
 
 type webScrollIn struct {
-	DY int `json:"dy" jsonschema:"Pixels to scroll. Negative scrolls up."`
+	DY  int    `json:"dy" jsonschema:"Pixels to scroll. Negative scrolls up."`
+	Tab string `json:"tab,omitempty" jsonschema:"Tab id from webview_tabs. Empty is the active tab."`
 }
 
 type webEvalIn struct {
 	Expression string `json:"expression" jsonschema:"JavaScript to evaluate."`
+	Tab        string `json:"tab,omitempty" jsonschema:"Tab id from webview_tabs. Empty is the active tab."`
 }
 
 func textResult(s string, isErr bool) *sdk.CallToolResult {

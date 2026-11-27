@@ -441,19 +441,21 @@ type app struct {
 	// reported is what the next change reports as the settings before it:
 	// as OnSettings last reported them, with what GatewaySettings read
 	// since. changes counts the changes, to drop a read they overtook.
-	reported Settings
-	changes  int
-	act      activityState
-	set      settingsState
-	auto     automationState
-	add      addState
-	droid    droidState      // Add phone's Android steps
-	virt     virtState       // Add phone's virtual phones (addvirtual.go)
-	chk      checkupState    // the phones' checkups
-	more     map[string]bool // the More phone controls popover, per device
-	rm       removeState     // the Remove this phone dialog (removephone.go)
-	found    foundState      // phones found on Wi-Fi: Use and Ignore on their way (wifi.go)
-	toasts   []string
+	reported   Settings
+	changes    int
+	act        activityState
+	set        settingsState
+	auto       automationState
+	browser    *browserHost
+	browserErr error
+	add        addState
+	droid      droidState      // Add phone's Android steps
+	virt       virtState       // Add phone's virtual phones (addvirtual.go)
+	chk        checkupState    // the phones' checkups
+	more       map[string]bool // the More phone controls popover, per device
+	rm         removeState     // the Remove this phone dialog (removephone.go)
+	found      foundState      // phones found on Wi-Fi: Use and Ignore on their way (wifi.go)
+	toasts     []string
 
 	// control is the banner above each phone's mirror as it shows, which
 	// changes between the person's gestures on the mirror (phone.go).
@@ -590,6 +592,9 @@ func newApp(api gateway.API, opt Options) *app {
 		a.settings = DefaultSettings()
 	}
 	a.reported = a.settings.clone()
+	if a.set.sec == secSafety {
+		a.set.sec = secPhones
+	}
 	a.gwSet.version = -1
 	a.act.init()
 	switch opt.StartPage {
@@ -666,6 +671,7 @@ func (a *app) ready() {
 	a.registerShortcut()
 	a.setMenu()
 	a.updateTray()
+	a.ensureBrowser()
 	// Windows draw anew in another language by themselves; the menus and
 	// the tray's tooltip keep the labels they were given until set again.
 	mygo.App.OnLocaleChanged(func(string) {
@@ -1305,9 +1311,6 @@ func (a *app) setMenu() {
 		items = append(items, debugMenu(a))
 	}
 	items = append(items, &mygo.MenuItem{Role: mygo.RoleWindowMenu})
-	if help := a.helpMenu(); help != nil {
-		items = append(items, help)
-	}
 	mygo.App.SetMenu(mygo.NewMenu(items))
 }
 

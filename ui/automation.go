@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -174,81 +175,121 @@ func (a *app) addRoute(st *automationState) {
 	st.routeName, st.routeScheme, st.routeAndroid, st.routeIOS, st.routePath = "", "", "", "", ""
 }
 
+func (a *app) ensureBrowser() {
+	if a.browser != nil || a.browserErr != nil || a.main == nil {
+		return
+	}
+	h, err := newBrowserHost(a.main)
+	if err != nil {
+		a.browserErr = err
+		if a.opt.Automation != nil && a.opt.Automation.Web != nil {
+			a.opt.Automation.Web.FailEngine(err)
+		}
+		return
+	}
+	a.browser = h
+	if a.opt.Automation != nil && a.opt.Automation.Web != nil {
+		a.opt.Automation.Web.UseEngine(h)
+	}
+}
+
 func (a *app) browserPage(c *mg.Context) {
 	p := pal(c)
 	pageHeader(c, func() { pageTitle(c, locales.BrowserTitle()) })
-	au := a.opt.Automation
-	mg.Scroll(c).Grow(1).Padding(28, 40).Children(func() {
-		mg.Column(c).MaxWidth(720).Gap(16).Children(func() {
-			mg.Text(c, locales.BrowserDesc()).FontSize(fsSmall).LineHeight(1.45).TextColor(p.ink2)
-			if au == nil || au.Web == nil {
-				mg.Text(c, locales.SettingsAutomationUnavailable()).FontSize(fsSmall).TextColor(p.ink2)
-				return
-			}
-			web := au.Web
-			st := &a.auto
-			mg.Row(c).Gap(8).AlignItems(mg.Center).Children(func() {
-				in := mg.TextInput(c.Key("web-url"), &st.webURL).Label(locales.BrowserURL()).Placeholder("https://").Grow(1)
-				goNow := button(c, locales.BrowserGo(), btnOpt{kind: btnPrimary}).Clicked() || in.Submitted()
-				if goNow {
-					a.browse(st.webURL, web.Navigate)
-				}
-				if button(c, locales.BrowserBack(), btnOpt{}).Clicked() {
-					a.browse("", func(ctx context.Context, _ string) (deskweb.Page, error) { return web.Back(ctx) })
-				}
-				if button(c, locales.BrowserForward(), btnOpt{}).Clicked() {
-					a.browse("", func(ctx context.Context, _ string) (deskweb.Page, error) { return web.Forward(ctx) })
-				}
-				if button(c, locales.BrowserReload(), btnOpt{}).Clicked() {
-					a.browse("", func(ctx context.Context, _ string) (deskweb.Page, error) { return web.Reload(ctx) })
-				}
-				if button(c, locales.BrowserSave(), btnOpt{}).Clicked() {
-					if err := web.SaveBookmark("", st.webURL); err != nil {
-						st.note = err.Error()
-					}
-				}
-			})
-			if button(c, locales.BrowserWindow(), btnOpt{}).Clicked() && !st.busy {
-				st.busy = true
-				go func() {
-					ctx, cancel := context.WithTimeout(a.ctx, 20*time.Second)
-					defer cancel()
-					err := web.UseChrome(ctx)
-					a.post(func() {
-						st.busy = false
-						if err != nil {
-							st.note = err.Error()
-						} else {
-							st.note = locales.BrowserWindowOpen()
-						}
-					})
-				}()
-			}
-			if st.note != "" {
-				mg.Text(c, st.note).FontSize(fsSmall).TextColor(p.ink2)
-			}
-			url, title := web.State()
-			if url != "" {
-				mg.Text(c, title).FontSize(fsBody).FontWeight(fwSemibold)
-				mg.Text(c, url).Font("monospace").FontSize(fsSmall).TextColor(p.ink2).Selectable()
+	a.ensureBrowser()
+	host := a.browser
+	st := &a.auto
+	mg.Column(c).Grow(1).MinHeight(0).Padding(12, 16).Gap(8).Children(func() {
+		mg.Text(c, locales.BrowserEmbedded()).FontSize(fsSmall).TextColor(p.ink2)
+		if host == nil {
+			if a.browserErr != nil {
+				mg.Text(c, a.browserErr.Error()).FontSize(fsSmall).TextColor(p.red)
 			} else {
-				mg.Text(c, locales.BrowserEmpty()).FontSize(fsSmall).TextColor(p.ink3)
+				mg.Text(c, locales.BrowserNoWindow()).FontSize(fsSmall).TextColor(p.ink2)
 			}
-			page, _ := web.Content(context.Background())
-			if page.Text != "" {
-				mg.Text(c, page.Text).FontSize(fsSmall).LineHeight(1.4)
+			return
+		}
+		view, tabs := host.views()
+		mg.Row(c).Gap(6).AlignItems(mg.Center).Children(func() {
+			for _, tb := range tabs {
+				tb := tb
+				label := tb.Title
+				if label == "" {
+					label = tb.URL
+				}
+				if label == "" {
+					label = tb.ID
+				}
+				opt := btnOpt{small: true}
+				if tb.Active {
+					opt.kind = btnPrimary
+				}
+				if button(c.Key("tab-"+tb.ID), label, opt).Clicked() {
+					_ = host.SwitchTab(context.Background(), tb.ID)
+					st.webURL = tb.URL
+				}
 			}
-			if len(web.Bookmarks()) > 0 {
-				mg.Text(c, locales.BrowserSaved()).FontSize(fsSmall).FontWeight(fwSemibold).TextColor(p.ink2)
-				for _, b := range web.Bookmarks() {
-					b := b
-					if button(c, b.Title, btnOpt{small: true}).Clicked() {
-						st.webURL = b.URL
-						a.browse(b.URL, web.Navigate)
-					}
+			if button(c, locales.BrowserNewTab(), btnOpt{small: true}).Clicked() {
+				if tab, err := host.NewTab(context.Background(), ""); err != nil {
+					st.note = err.Error()
+				} else {
+					st.webURL = tab.URL
+				}
+			}
+			if button(c, locales.BrowserCloseTab(), btnOpt{small: true}).Clicked() {
+				if err := host.CloseTab(context.Background(), ""); err != nil {
+					st.note = err.Error()
 				}
 			}
 		})
+		mg.Row(c).Gap(8).AlignItems(mg.Center).Children(func() {
+			in := mg.TextInput(c.Key("web-url"), &st.webURL).Label(locales.BrowserURL()).Placeholder("https://").Grow(1)
+			if button(c, locales.BrowserGo(), btnOpt{kind: btnPrimary}).Clicked() || in.Submitted() {
+				a.browse(st.webURL, func(ctx context.Context, url string) (deskweb.Page, error) {
+					return host.Navigate(ctx, "", url)
+				})
+			}
+			if button(c, locales.BrowserBack(), btnOpt{}).Clicked() {
+				a.browse("", func(ctx context.Context, _ string) (deskweb.Page, error) { return host.Back(ctx, "") })
+			}
+			if button(c, locales.BrowserForward(), btnOpt{}).Clicked() {
+				a.browse("", func(ctx context.Context, _ string) (deskweb.Page, error) { return host.Forward(ctx, "") })
+			}
+			if button(c, locales.BrowserReload(), btnOpt{}).Clicked() {
+				a.browse("", func(ctx context.Context, _ string) (deskweb.Page, error) { return host.Reload(ctx, "") })
+			}
+			if au := a.opt.Automation; au != nil && au.Web != nil && button(c, locales.BrowserSave(), btnOpt{}).Clicked() {
+				if err := au.Web.SaveBookmark("", st.webURL); err != nil {
+					st.note = err.Error()
+				}
+			}
+		})
+		if au := a.opt.Automation; au != nil && au.Web != nil {
+			if marks := au.Web.Bookmarks(); len(marks) > 0 {
+				mg.Row(c).Gap(6).AlignItems(mg.Center).Children(func() {
+					mg.Text(c, locales.BrowserSaved()).FontSize(fsSmall).TextColor(p.ink2)
+					for i, b := range marks {
+						b := b
+						label := b.Title
+						if label == "" {
+							label = b.URL
+						}
+						if button(c.Key(fmt.Sprintf("mark-%d", i)), label, btnOpt{small: true}).Clicked() {
+							st.webURL = b.URL
+							a.browse(b.URL, func(ctx context.Context, url string) (deskweb.Page, error) {
+								return host.Navigate(ctx, "", url)
+							})
+						}
+					}
+				})
+			}
+		}
+		if st.note != "" {
+			mg.Text(c, st.note).FontSize(fsSmall).TextColor(p.ink2)
+		}
+		if view != nil {
+			mg.WebView(c, view).Grow(1).MinHeight(240).Radius(8)
+		}
 	})
 }
 

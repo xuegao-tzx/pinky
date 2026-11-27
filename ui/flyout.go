@@ -54,7 +54,6 @@ func (a *app) trayMenu() *mygo.Menu {
 		mygo.Separator(),
 		{Label: locales.FlyoutMenuStopAll(), Click: func(*mygo.MenuItem, *mygo.Window) { a.stopAll() }},
 		mygo.Separator(),
-		{Label: locales.TelSendFeedbackMenu(), Hidden: a.tel() == nil, Click: func(*mygo.MenuItem, *mygo.Window) { a.openFeedback() }},
 		{Role: mygo.RoleQuit},
 	})
 }

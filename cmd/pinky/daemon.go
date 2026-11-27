@@ -23,7 +23,6 @@ import (
 	"github.com/DIYgod/pinky/internal/policy"
 	"github.com/DIYgod/pinky/internal/secret"
 	"github.com/DIYgod/pinky/internal/tailnet"
-	"github.com/DIYgod/pinky/internal/telemetry"
 	"github.com/DIYgod/pinky/internal/update"
 	"github.com/DIYgod/pinky/internal/webmirror"
 	"github.com/DIYgod/pinky/ui"
@@ -46,13 +45,6 @@ func runDaemon(args []string) error {
 		return err
 	}
 	c.Log = newLogger(os.Stderr, *verbose)
-	if dirs, err := api.DefaultDirs(); err == nil && dirs.Ensure() == nil {
-		crashes := captureCrashes(dirs, "daemon", c.Log)
-		// Not a plain Stop: a panic runs deferred calls, and a Stop removed the
-		// crash file before the runtime wrote the panic to it.
-		defer func() { crashes.Exit(recover()) }()
-		c.Crashes = crashes
-	}
 
 	rg, err := startGateway(c)
 	if err != nil {
@@ -77,10 +69,6 @@ func runDaemon(args []string) error {
 	rg.G.SetSmallerRecordings(s.SmallerRecordings)
 	rg.G.SetRetention(s.KeepDays)
 	rg.G.SetWiFi(s.IOSWiFi)
-	tctx, tstop := context.WithCancel(context.Background())
-	defer tstop()
-	tel := startTelemetry(tctx, rg, c.Crashes, s, "daemon", c.Fake, c.Log)
-	defer tel.Close()
 	if !c.Fake {
 		// The computer stays awake as for the app (awake.go); fake phones
 		// need none of that.
@@ -94,6 +82,9 @@ func runDaemon(args []string) error {
 	}
 	auto := openAutomation(rg, c.Log)
 	defer auto.Close()
+	if auto.Web != nil {
+		auto.Web.MarkHeadless()
+	}
 	ask := startDaemonPilot(rg, auto, s)
 	defer ask.Close()
 	defer rg.MCP.SetTasks(nil)
@@ -146,8 +137,6 @@ type gatewayConfig struct {
 	// asking for a while (gateway.Options.UnlockWindowPIN); nil turns that
 	// off, as for PIN.
 	UnlockWindowPIN func(ctx context.Context, deviceID string, length time.Duration) (string, error)
-	// Crashes is the process's crash capture, for usage statistics.
-	Crashes *telemetry.Crashes
 }
 
 func (c *gatewayConfig) flags(fs *flag.FlagSet) {

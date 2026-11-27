@@ -1934,7 +1934,7 @@
   "unlockWindowCancel": "キャンセル",
   "unlockWindowChanged": "{name} の確認なしでのロック解除はオフのままです：確認中にオフにされたか、設定やスマホが変わりました。",
   "unlockWindowConfirming": "確認を待っています…",
-  "unlockWindowDesc": "一度確認すると、最長 8 時間、エージェントのタスクのために Pinky がスマホのロックを解除します。エージェントに PIN は見えません。",
+  "unlockWindowDesc": "一度確認すると、自分で終了するまで Pinky がエージェントのためにスマホのロックを解除します。期限はありません。エージェントに PIN は見えません。",
   "unlockWindowEnd": "終了",
   "unlockWindowEndLabel": "{name} の確認なしでのロック解除を終了",
   "unlockWindowEndWhat": "{name} の確認なしでのロック解除を終了",
@@ -2215,5 +2215,12 @@
   "browserWindow": "ブラウザウィンドウを開く",
   "browserWindowOpen": "Pinky のブラウザウィンドウを開きました。そこでログインしてください。ツールは同じページを操作します。",
   "remoteAuthToggle": "エージェントトークンを要求",
-  "remoteAuthDesc": "オフにすると、このアドレスに届くクライアントは誰でも Pinky を呼べます。信頼できるネットワーク以外ではオンのままにしてください。"
+  "remoteAuthDesc": "オフにすると、このアドレスに届くクライアントは誰でも Pinky を呼べます。信頼できるネットワーク以外ではオンのままにしてください。",
+  "unlockWindowForeverLine": "自分で終了するまで有効です。期限はありません。",
+  "unlockWindowBannerForever": "確認なしでロック解除 · オン",
+  "unlockWindowOnForeverToast": "{name} の確認なしロック解除をオンにしました。期限はありません。",
+  "browserNewTab": "新しいタブ",
+  "browserCloseTab": "タブを閉じる",
+  "browserEmbedded": "ページはこのウィンドウの中です。ここでログインすると、Pinky がログイン状態を保持します。",
+  "browserNoWindow": "ブラウザは Pinky のウィンドウに埋め込まれています。使うには Pinky を開いてください。"
 }

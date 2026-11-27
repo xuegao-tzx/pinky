@@ -189,6 +189,7 @@ type device struct {
 	// unlockRefused whether the phone refused the PIN one entered
 	// (unlockwindow.go).
 	unlockUntil   time.Time
+	unlockForever bool
 	unlockRefused bool
 }
 
@@ -441,7 +442,9 @@ func (a *API) deviceView(d *device) gateway.DeviceView {
 	}
 	v.Paused = d.paused
 	v.Streaming = d.info.State == driver.StateOnline && !d.paused && d.streams > 0
-	if a.opt.Now().Before(d.unlockUntil) {
+	if d.unlockForever {
+		v.UnlockForever = true
+	} else if a.opt.Now().Before(d.unlockUntil) {
 		v.UnlockUntil = d.unlockUntil
 	}
 	v.UnlockRefused = d.unlockRefused

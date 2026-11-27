@@ -260,9 +260,9 @@ func TestPagesRender(t *testing.T) {
 	if err := tt.Click("Settings"); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"When should agents ask you?", "Blocked apps", "Northbank", "Read-only mode"} {
+	for _, want := range []string{"Phones"} {
 		if !hasText(tt, want) {
-			t.Errorf("Safety lacks %q", want)
+			t.Errorf("Phones lacks %q: %q", want, tt.Texts())
 		}
 	}
 	if err := tt.Click("Advanced"); err != nil {
