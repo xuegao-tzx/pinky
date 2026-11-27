@@ -14,8 +14,9 @@ import (
 
 // Unlock without asking (issue #231). Unlocking from the computer (wake.go)
 // asks the person to confirm each unlock. For long tasks they may instead
-// confirm once to let Pinky unlock one phone for agents' tasks for 1, 4 or
-// 8 hours: an unlock window, per phone and off by default.
+// confirm once to let Pinky unlock one phone for agents' tasks until they
+// end it, or for 1, 4 or 8 hours: an unlock window, per phone and off by
+// default. A length of UnlockWindowForever does not expire.
 //
 // Opening one (OpenUnlockWindow) takes the phone's saved PIN from
 // Options.UnlockWindowPIN, which asks the person to confirm with Touch ID,
@@ -49,8 +50,12 @@ import (
 // phone restarts stays the person's, on the phone, as with every unlock
 // from the computer.
 
-// UnlockWindowLengths are the lengths an unlock window may have.
-var UnlockWindowLengths = []time.Duration{time.Hour, 4 * time.Hour, 8 * time.Hour}
+// UnlockWindowForever is an unlock window that does not expire.
+const UnlockWindowForever time.Duration = 0
+
+// UnlockWindowLengths are the lengths an unlock window may have. The first
+// is UnlockWindowForever: it does not expire.
+var UnlockWindowLengths = []time.Duration{UnlockWindowForever, time.Hour, 4 * time.Hour, 8 * time.Hour}
 
 // ErrUnlockWindowEnded is returned by OpenUnlockWindow when the window was
 // ended, or the phone removed, while the person confirmed it.
@@ -73,9 +78,16 @@ type unlockWindow struct {
 	dev *device
 	pin []byte
 	// until has no monotonic reading, so it compares by the wall clock: a
-	// computer that slept does not stretch the window.
+	// computer that slept does not stretch the window. Zero while forever.
 	until time.Time
-	timer *time.Timer
+	// forever does not expire. The person ends it.
+	forever bool
+	timer   *time.Timer
+}
+
+// alive reports whether the window has not run out.
+func (w *unlockWindow) alive(now time.Time) bool {
+	return w.forever || now.Before(w.until)
 }
 
 // windowResult is what an unlock window did for a locked phone.
@@ -108,7 +120,7 @@ const (
 // secret.ErrCancelled, when the person did not confirm.
 func (g *Gateway) OpenUnlockWindow(deviceID string, length time.Duration) error {
 	if !slices.Contains(UnlockWindowLengths, length) {
-		return fmt.Errorf("unlock without asking lasts 1, 4 or 8 hours, not %s", length)
+		return fmt.Errorf("unlock without asking is unlimited, or lasts 1, 4 or 8 hours, not %s", length)
 	}
 	d, err := g.device(deviceID)
 	if err != nil {
@@ -133,7 +145,10 @@ func (g *Gateway) OpenUnlockWindow(deviceID string, length time.Duration) error 
 	if err != nil {
 		return err
 	}
-	w := &unlockWindow{dev: d, pin: []byte(pin), until: time.Now().Add(length).Round(0)}
+	w := &unlockWindow{dev: d, pin: []byte(pin), forever: length == UnlockWindowForever}
+	if !w.forever {
+		w.until = time.Now().Add(length).Round(0)
+	}
 	pin = ""
 	g.mu.Lock()
 	if g.closed || d.removed || g.devices[deviceID] != d || g.windowEpoch != epoch {
@@ -142,11 +157,17 @@ func (g *Gateway) OpenUnlockWindow(deviceID string, length time.Duration) error 
 		return ErrUnlockWindowEnded
 	}
 	g.endWindowLocked(deviceID, "replaced")
-	w.timer = time.AfterFunc(length, func() { g.expireWindow(deviceID, w) })
+	if !w.forever {
+		w.timer = time.AfterFunc(length, func() { g.expireWindow(deviceID, w) })
+	}
 	g.windows[deviceID] = w
 	delete(g.pinRefused, deviceID)
 	g.mu.Unlock()
-	g.log.Info("unlock without asking: on", "device", deviceID, "until", w.until.Format(time.RFC3339))
+	until := "forever"
+	if !w.forever {
+		until = w.until.Format(time.RFC3339)
+	}
+	g.log.Info("unlock without asking: on", "device", deviceID, "until", until)
 	g.emit(Event{Kind: EventDevices, DeviceID: deviceID})
 	g.emit(Event{Kind: EventNeeds, DeviceID: deviceID})
 	return nil
@@ -192,7 +213,7 @@ func (g *Gateway) expireWindow(id string, w *unlockWindow) {
 // which their timers miss while the computer sleeps (pollLocks).
 func (g *Gateway) expireWindowsLocked(now time.Time) {
 	for id, w := range g.windows {
-		if !now.Before(w.until) {
+		if !w.alive(now) {
 			g.endWindowLocked(id, "it ran out")
 		}
 	}
@@ -247,7 +268,7 @@ func (g *Gateway) windowOpenForLocked(l *lease) *unlockWindow {
 	if w == nil || w.dev != d {
 		return nil
 	}
-	if !time.Now().Before(w.until) {
+	if !w.alive(time.Now()) {
 		g.endWindowLocked(d.id, "it ran out")
 		return nil
 	}

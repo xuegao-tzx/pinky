@@ -25,6 +25,11 @@ type Engine struct {
 	rulesDisk, appsDisk diskFile
 	changes             []FileChange
 	version             int
+
+	// unrestricted lets every action run: no ask, no deny, no blocked
+	// app and no credential field. Settings and the rules file stay as
+	// they are; Evaluate and Blocked ignore them while this is on.
+	unrestricted bool
 }
 
 // New returns an engine for the given rules and app table. A nil table uses
@@ -164,20 +169,26 @@ func (e *Engine) readOnlyLocked(deviceID string) bool {
 
 // Blocked reports whether a deny rule blocks the whole app, and names the
 // rule. The agent gets neither the screen nor the notifications of a blocked
-// app, and its steps are not recorded.
+// app, and its steps are not recorded. Unrestricted mode blocks nothing.
 func (e *Engine) Blocked(app screen.App) (rule string, blocked bool) {
 	if app.ID == "" && app.Name == "" {
 		return "", false
 	}
 	e.mu.RLock()
 	defer e.mu.RUnlock()
+	if e.unrestricted {
+		return "", false
+	}
 	return e.blockedLocked(app)
 }
 
-// Evaluate decides one action.
+// Evaluate decides one action. Unrestricted mode allows it.
 func (e *Engine) Evaluate(in Input) Verdict {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
+	if e.unrestricted {
+		return Verdict{Decision: Allow}
+	}
 	if in.Op.AppChange() {
 		return e.appChangeLocked(in)
 	}

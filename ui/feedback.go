@@ -1,17 +1,14 @@
 package ui
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
-	"time"
 
 	mg "github.com/egoist/mygo/ui"
 
 	"github.com/DIYgod/pinky/cmd/pinky/locales"
-	"github.com/DIYgod/pinky/internal/driver"
 	"github.com/DIYgod/pinky/internal/gateway"
 	"github.com/DIYgod/pinky/internal/telemetry"
 )
@@ -36,47 +33,9 @@ type feedbackState struct {
 // openURL opens an address in the browser; e2e builds may log it instead.
 var openURL = func(c *mg.Context, u string, done func(error)) { c.OpenURLThen(u, done) }
 
-// openFeedback opens Send Feedback, from the Help menu, the menu bar
-// icon's menu and Settings. A draft that was not sent stays.
-func (a *app) openFeedback() {
-	tel := a.tel()
-	if tel == nil {
-		return
-	}
-	fb := &a.t.fb
-	if !fb.open && fb.message == "" && fb.title == "" {
-		fb.attach = true
-	}
-	fb.open, fb.err = true, ""
-	a.showMain()
-	// The diagnostics are read again each time: the phones and the logs
-	// change.
-	fb.seq++
-	seq := fb.seq
-	fb.reading = true
-	var phones []driver.Info
-	for _, d := range a.devices {
-		phones = append(phones, d.Info)
-	}
-	extra := a.diagnosticLines()
-	tn, _ := a.api.(tailnetter)
-	go func() {
-		if tn != nil {
-			ctx, cancel := context.WithTimeout(a.ctx, 15*time.Second)
-			extra = append(extra, tailnetDiagnostics(ctx, tn, phones)...)
-			cancel()
-		}
-		d := tel.Diagnostics(phones, extra...)
-		a.post(func() {
-			if seq == fb.seq {
-				fb.diag, fb.reading = d, false
-			}
-		})
-	}()
-	if a.main != nil {
-		a.main.Invalidate()
-	}
-}
+// openFeedback used to open Send Feedback. That flow is gone: nothing
+// opens a browser or a GitHub issue from Pinky.
+func (a *app) openFeedback() {}
 
 // recordingSize names the recording size setting for the diagnostics.
 func recordingSize(smaller bool) string {

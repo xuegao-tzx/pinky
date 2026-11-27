@@ -12,14 +12,17 @@ FFMPEG := build/ffmpeg
 ADB := build/adb
 # The companion APK that make app puts in the app (make companion).
 COMPANION_APK ?= android/companion/app/build/outputs/apk/debug/app-debug.apk
-# The identity that signs Pinky.app: macos.signingIdentity in
-# cmd/pinky/mygo.json, else "-", ad hoc, for this Mac only. A Developer ID
-# ("Developer ID Application: …") signs for other Macs.
-MACOS_SIGN ?= $(or $(shell sed -n 's/.*"signingIdentity": *"\([^"]*\)".*/\1/p' cmd/pinky/mygo.json),-)
-# A release: Pinky.app signed with this Developer ID and notarized with the
-# notarytool profile NOTARY_PROFILE, which `xcrun notarytool
-# store-credentials` keeps in the login keychain.
-RELEASE_SIGN ?= Developer ID Application: NATURAL SELECTION LABS PTE. LTD. (492J8Q67PF)
+# The identity that signs Pinky.app. Nothing is hardcoded: set
+# PINKY_SIGN_IDENTITY or CODESIGN_IDENTITY, or pass MACOS_SIGN, or put
+# macos.signingIdentity in cmd/pinky/mygo.json. "-" is an ad-hoc signature
+# for this Mac only. A Developer ID ("Developer ID Application: …") or an
+# Apple Development certificate signs for other Macs.
+#   make app MACOS_SIGN="Apple Development: Your Name (TEAMID)"
+#   PINKY_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" make release
+MACOS_SIGN ?= $(or $(PINKY_SIGN_IDENTITY),$(CODESIGN_IDENTITY),$(shell sed -n 's/.*"signingIdentity": *"\([^"]*\)".*/\1/p' cmd/pinky/mygo.json),-)
+# make release signs with MACOS_SIGN_IDENTITY when that is set, otherwise
+# with MACOS_SIGN, then notarizes with NOTARY_PROFILE.
+RELEASE_SIGN ?= $(or $(MACOS_SIGN_IDENTITY),$(MACOS_SIGN))
 NOTARY_PROFILE ?= pinky-notary
 DMG := build/pinky/darwin-$(GOARCH)/pinky-$(VERSION)-$(GOARCH).dmg
 
@@ -90,6 +93,7 @@ windows-dev:
 # Developer ID and notarized, to try on other Macs. Releases are made by
 # scripts/release.sh and the release workflow instead (docs/RELEASING.md).
 release:
+	@test "$(RELEASE_SIGN)" != "-" || { echo "set PINKY_SIGN_IDENTITY or MACOS_SIGN to your Apple Developer certificate"; exit 1; }
 	$(MAKE) app MACOS_SIGN="$(RELEASE_SIGN)"
 	$(MAKE) notarize
 

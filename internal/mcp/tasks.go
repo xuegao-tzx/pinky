@@ -29,6 +29,10 @@ type TaskRequest struct {
 	Task     string
 	Apps     []string
 	ReadOnly bool
+	// SkillText is appended to the model's first message: the skills the
+	// caller named, or the enabled ones. It is not the task name the
+	// person sees.
+	SkillText string
 }
 
 // Task is a task an agent handed Pinky, running or ended.
@@ -73,6 +77,9 @@ type TaskStep struct {
 	// From is, for a message (gateway.PersonStep), the agent that sent it;
 	// empty for the person's.
 	From string
+	// Output is a short excerpt of the tool result, for a structured
+	// report. Empty for older logs.
+	Output string
 }
 
 // TaskError is why Tasks cannot do what was asked, for the agent.

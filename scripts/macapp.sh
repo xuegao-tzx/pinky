@@ -4,6 +4,10 @@
 #
 #   SIGN=<identity> [ADB=<adb folder>] scripts/macapp.sh <Pinky.app> <ffmpeg prefix> [<disk image>]
 #
+# SIGN is the codesign identity. PINKY_SIGN_IDENTITY and CODESIGN_IDENTITY
+# are used when SIGN is unset. None of them means "-", an ad-hoc signature.
+# The name is never hardcoded.
+#
 # - copies FFmpeg's libraries from <ffmpeg prefix>/lib (make ffmpeg) into
 #   Contents/Frameworks, named by their major versions as internal/video
 #   loads them; each one's install name is @rpath/<name> and its rpath is
@@ -25,7 +29,7 @@ set -eu
 app=${1:?usage: scripts/macapp.sh <Pinky.app> <ffmpeg prefix> [<disk image>]}
 ffmpeg=${2:?usage: scripts/macapp.sh <Pinky.app> <ffmpeg prefix> [<disk image>]}
 dmg=${3:-}
-sign=${SIGN:--}
+sign=${SIGN:-${PINKY_SIGN_IDENTITY:-${CODESIGN_IDENTITY:--}}}
 signflags=""
 if [ "$sign" != "-" ]; then
 	signflags="--options runtime --timestamp"

@@ -98,9 +98,12 @@ type DeviceView struct {
 	// is then "Screen off".
 	ScreenOff bool
 	// UnlockUntil is when the phone's unlock window ends, zero while it has
-	// none: until then Pinky enters its PIN when an agent's step finds it
-	// locked (Gateway.OpenUnlockWindow).
+	// none or while UnlockForever is set: until then Pinky enters its PIN
+	// when an agent's step finds it locked (Gateway.OpenUnlockWindow).
 	UnlockUntil time.Time
+	// UnlockForever is an unlock window that does not expire. The person
+	// ends it themselves.
+	UnlockForever bool
 	// UnlockRefused is set once the phone did not accept the PIN an unlock
 	// window entered, which ended the window, until the phone is unlocked
 	// or a window opens again: the unlock card says so, as after a wrong

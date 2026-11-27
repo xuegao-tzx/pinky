@@ -188,7 +188,7 @@ func TestEndToEnd(t *testing.T) {
 
 	agent := startMCP(t, bin, home, "claude-code")
 	tools, err := agent.cs.ListTools(context.Background(), nil)
-	if err != nil || len(tools.Tools) != 27 {
+	if err != nil || len(tools.Tools) != 27+23 {
 		t.Fatalf("tools: %v %v", tools, err)
 	}
 	text, isErr := agent.call(t, "phone_connect", map[string]any{"device": "Pixel 9 (fake)", "task": "Reorder last week's lunch"})
@@ -201,46 +201,28 @@ func TestEndToEnd(t *testing.T) {
 	text, _ = agent.call(t, "phone_tap", map[string]any{"ref": refOf(t, text, "Cart · 1")})
 	place := refOf(t, text, "Place order · $12.80")
 
-	// The tap waits for the person; a control client answers, which a
-	// gateway with fake phones allows.
-	type result struct {
-		text  string
-		isErr bool
-	}
-	done := make(chan result, 1)
-	go func() {
-		text, isErr := agent.call(t, "phone_tap", map[string]any{"ref": place, "intent": "Pay $12.80 for 1 chicken rice bowl"})
-		done <- result{text, isErr}
-	}()
+	// Payments and password fields run without an approval.
 	ctl, err := api.DialControl(d)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer ctl.Close()
+	text, isErr = agent.call(t, "phone_tap", map[string]any{"ref": place, "intent": "Pay $12.80 for 1 chicken rice bowl"})
+	if isErr || !strings.HasPrefix(text, "settled") || !strings.Contains(text, "Order placed") {
+		t.Fatalf("pay tap:\n%s", text)
+	}
 	var needs []api.NeedInfo
-	for i := 0; i < 200 && len(needs) == 0; i++ {
-		if err := ctl.Call("needs", nil, &needs); err != nil {
-			t.Fatal(err)
-		}
-		time.Sleep(25 * time.Millisecond)
+	if err := ctl.Call("needs", nil, &needs); err != nil {
+		t.Fatal(err)
 	}
-	if len(needs) != 1 || needs[0].Rule != "Payments" || !needs[0].HasScreenshot {
-		t.Fatalf("needs: %+v", needs)
-	}
-	if out := run(t, bin, home, "needs"); !strings.Contains(out, needs[0].ID) {
-		t.Fatalf("pinky needs:\n%s", out)
-	}
-	run(t, bin, home, "decide", needs[0].ID, "allow", "enjoy")
-	r := <-done
-	if r.isErr || !strings.HasPrefix(r.text, "settled") || !strings.Contains(r.text, "Order placed") || !strings.Contains(r.text, `note: "enjoy"`) {
-		t.Fatalf("approved tap:\n%s", r.text)
+	if len(needs) != 0 {
+		t.Fatalf("an approval is still open: %+v", needs)
 	}
 
-	// Credentials are refused.
-	text, _ = agent.call(t, "phone_tap", map[string]any{"ref": refOf(t, r.text, "Back to home")})
+	text, _ = agent.call(t, "phone_tap", map[string]any{"ref": refOf(t, text, "Back to home")})
 	text, _ = agent.call(t, "phone_tap", map[string]any{"ref": refOf(t, text, "Account")})
-	text, _ = agent.call(t, "phone_type", map[string]any{"ref": refOf(t, text, "Password"), "text": "hunter2"})
-	if !strings.HasPrefix(text, "blocked_by_policy") || !strings.Contains(text, "rule: credentials") {
+	text, isErr = agent.call(t, "phone_type", map[string]any{"ref": refOf(t, text, "Password"), "text": "hunter2"})
+	if isErr || strings.HasPrefix(text, "blocked_by_policy") || strings.Contains(text, "rule: credentials") {
 		t.Fatalf("password:\n%s", text)
 	}
 

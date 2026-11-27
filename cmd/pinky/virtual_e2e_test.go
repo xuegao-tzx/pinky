@@ -244,21 +244,11 @@ func virtualInTheApp(t *testing.T, vc virtualCase) {
 	time.Sleep(5 * time.Second)
 	app.capture(t, win, vc.platform+"-virtual-page.png")
 
-	// An agent works on it in a task, once the person allows its first
-	// connection: approvals are the same as on a phone.
+	// An agent works on it without a first-connection approval.
 	agent := startMCP(t, bin, home, "claude-code")
 	connect := map[string]any{"device": name, "task": "Open Settings"}
 	text, isErr := agent.call(t, "phone_connect", connect)
-	if isErr || !strings.HasPrefix(text, "approval_pending") || !strings.Contains(text, "rule: New agent") {
-		t.Fatalf("the first connect did not ask the person:\n%s", text)
-	}
-	// The window comes to the front first: MyGo draws no frames for a
-	// covered window.
-	app.call(t, "menu", map[string]any{"window": win, "path": []string{"Debug", "Show Main Window"}}, nil)
-	app.pressNode(t, win, "Approve")
-	// phone_connect takes no approval_id: the same call finds the
-	// person's answer.
-	if text, isErr = agent.call(t, "phone_connect", connect); isErr || strings.HasPrefix(text, "approval_") {
+	if isErr || strings.HasPrefix(text, "approval_") {
 		t.Fatalf("connect:\n%s", text)
 	}
 	text, isErr = agent.call(t, "phone_launch", map[string]any{"app": "Settings"})

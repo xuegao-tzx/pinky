@@ -16,6 +16,7 @@ func iconPNG() []byte { return assets.Icon256 }
 // view builds the main window: the sidebar and the page it chose.
 func (a *app) view(c *mg.Context) {
 	p := applyTheme(c)
+	a.ensureBrowser()
 	a.buildSeq++
 	a.unseen = c.WindowHidden() || time.Since(a.hidAt) < hideSettle
 	for _, msg := range a.toasts {
@@ -33,6 +34,7 @@ func (a *app) view(c *mg.Context) {
 	mg.Row(c).Fill().AlignItems(mg.Stretch).Children(func() {
 		a.sidebar(c)
 		mg.Column(c).Grow(1).MinWidth(0).Background(p.bg).Children(func() {
+			a.standbyBrowser(c)
 			// A page fades in where the last one was.
 			mg.Column(c.Key(a.page)).Grow(1).MinHeight(0).Transition(swapIn()).Children(func() {
 				switch a.page {
@@ -42,13 +44,14 @@ func (a *app) view(c *mg.Context) {
 					a.settingsPage(c)
 				case pageAddPhone:
 					a.addPhonePage(c)
+				case pageBrowser:
+					a.browserPage(c)
 				default:
 					a.phonesPage(c)
 				}
 			})
 		})
 	})
-	a.telemetryDialogs(c)
 	a.updateDialogs(c)
 	a.shotDialog(c)
 	a.removeDialog(c)
@@ -123,6 +126,7 @@ func (a *app) sidebar(c *mg.Context) {
 				a.page = pageActivity
 				a.act.load(a)
 			})
+			footRow(c, icMonitor, icMonitor, locales.SidebarBrowser(), a.page == pageBrowser, func() { a.page = pageBrowser })
 			footRow(c, icSettings, icSettingsOn, locales.SidebarSettings(), a.page == pageSettings, func() { a.page = pageSettings })
 			// Stop all shows once Pinky lists a phone: before that it has
 			// nothing to stop. Its shortcut works either way.

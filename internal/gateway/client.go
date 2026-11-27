@@ -64,8 +64,11 @@ func (g *Gateway) Devices() []DeviceView {
 			v.TaskID = d.lease.task.id
 		}
 		v.LeaseGen, v.LeaseEnded = d.leaseGen, d.leaseEnded
-		if w := g.windows[d.id]; w != nil && time.Now().Before(w.until) {
-			v.UnlockUntil = w.until
+		if w := g.windows[d.id]; w != nil && w.alive(time.Now()) {
+			v.UnlockForever = w.forever
+			if !w.forever {
+				v.UnlockUntil = w.until
+			}
 		}
 		v.UnlockRefused = g.pinRefused[d.id]
 		out = append(out, v)

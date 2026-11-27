@@ -101,6 +101,23 @@ func (d *Device) linkApp(ctx context.Context, link string) (driver.App, error) {
 	return app, err
 }
 
+// OpenURI implements driver.URIOpener. With a bundle id it launches that
+// app on the URL. Without one it opens the URL in the app iOS would pick.
+func (d *Device) OpenURI(ctx context.Context, uri, bundle string) error {
+	uri = strings.TrimSpace(uri)
+	if _, err := linkScheme(uri); err != nil {
+		return err
+	}
+	if bundle = strings.TrimSpace(bundle); bundle != "" {
+		return d.gone(d.startApp(ctx, bundle, uri))
+	}
+	app, err := d.LinkApp(ctx, uri)
+	if err != nil {
+		return err
+	}
+	return d.OpenLink(ctx, uri, app)
+}
+
 // OpenLink implements driver.LinkOpener: the app comes up with the link,
 // through payloadURL in its launch request (as devicectl's --payload-url).
 // A running app comes to the front without restarting.
@@ -173,6 +190,22 @@ func (d *WDADevice) SetLinkSchemes(fn func(context.Context) (map[string][]driver
 	d.appMu.Unlock()
 }
 
+// OpenURI implements driver.URIOpener through WebDriverAgent's /url.
+func (d *WDADevice) OpenURI(ctx context.Context, uri, bundle string) error {
+	uri = strings.TrimSpace(uri)
+	if _, err := linkScheme(uri); err != nil {
+		return err
+	}
+	body := map[string]any{"url": uri}
+	if bundle = strings.TrimSpace(bundle); bundle != "" {
+		body["bundleId"] = bundle
+	}
+	if err := d.c.do(ctx, d.c.long, http.MethodPost, "/url", body, nil); err != nil {
+		return fmt.Errorf("open %s: %w", uri, err)
+	}
+	return nil
+}
+
 // OpenLink implements driver.LinkOpener: WebDriverAgent opens the link in
 // the app by bundle id (XCTest's openURL:usingApplication:).
 func (d *WDADevice) OpenLink(ctx context.Context, link string, app driver.App) error {
@@ -201,4 +234,7 @@ var (
 	_ driver.LinkOpener = (*Device)(nil)
 	_ driver.LinkOpener = (*AXDevice)(nil)
 	_ driver.LinkOpener = (*WDADevice)(nil)
+	_ driver.URIOpener  = (*Device)(nil)
+	_ driver.URIOpener  = (*AXDevice)(nil)
+	_ driver.URIOpener  = (*WDADevice)(nil)
 )

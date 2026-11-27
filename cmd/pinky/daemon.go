@@ -23,7 +23,6 @@ import (
 	"github.com/DIYgod/pinky/internal/policy"
 	"github.com/DIYgod/pinky/internal/secret"
 	"github.com/DIYgod/pinky/internal/tailnet"
-	"github.com/DIYgod/pinky/internal/telemetry"
 	"github.com/DIYgod/pinky/internal/update"
 	"github.com/DIYgod/pinky/internal/webmirror"
 	"github.com/DIYgod/pinky/ui"
@@ -35,7 +34,8 @@ func runDaemon(args []string) error {
 	c.flags(fs)
 	verbose := fs.Bool("v", false, "log debug messages")
 	noUpdates := fs.Bool("no-update-check", false, "do not look for new versions of Pinky")
-	httpAddr := fs.String("http", "", `also serve MCP over Streamable HTTP at this address, such as "`+ui.DefaultRemoteAddr+`"; each request needs the agent token (`+"`pinky token`"+`)`)
+	httpAddr := fs.String("http", "", `also serve MCP over Streamable HTTP at this address, such as "`+ui.DefaultRemoteAddr+`"; each request needs the agent token (`+"`pinky token`"+`) unless --http-open is set`)
+	httpOpen := fs.Bool("http-open", false, "with --http, do not require the agent token (a trusted network only)")
 	mirror := fs.Bool("mirror", false, "also show the phones in a web browser at "+webmirror.URL()+"; its secret link is printed to a terminal only")
 	mirrorControl := fs.Bool("mirror-control", false, "with --mirror, also let the browser use the phones; the control link is printed to a terminal only")
 	if err := fs.Parse(args); err != nil {
@@ -45,13 +45,6 @@ func runDaemon(args []string) error {
 		return err
 	}
 	c.Log = newLogger(os.Stderr, *verbose)
-	if dirs, err := api.DefaultDirs(); err == nil && dirs.Ensure() == nil {
-		crashes := captureCrashes(dirs, "daemon", c.Log)
-		// Not a plain Stop: a panic runs deferred calls, and a Stop removed the
-		// crash file before the runtime wrote the panic to it.
-		defer func() { crashes.Exit(recover()) }()
-		c.Crashes = crashes
-	}
 
 	rg, err := startGateway(c)
 	if err != nil {
@@ -76,10 +69,6 @@ func runDaemon(args []string) error {
 	rg.G.SetSmallerRecordings(s.SmallerRecordings)
 	rg.G.SetRetention(s.KeepDays)
 	rg.G.SetWiFi(s.IOSWiFi)
-	tctx, tstop := context.WithCancel(context.Background())
-	defer tstop()
-	tel := startTelemetry(tctx, rg, c.Crashes, s, "daemon", c.Fake, c.Log)
-	defer tel.Close()
 	if !c.Fake {
 		// The computer stays awake as for the app (awake.go); fake phones
 		// need none of that.
@@ -91,11 +80,22 @@ func runDaemon(args []string) error {
 		}()
 		defer func() { astop(); <-adone }()
 	}
+	auto := openAutomation(rg, c.Log)
+	defer auto.Close()
+	if auto.Web != nil {
+		auto.Web.MarkHeadless()
+	}
+	ask := startDaemonPilot(rg, auto, s)
+	defer ask.Close()
+	defer rg.MCP.SetTasks(nil)
 	if *httpAddr != "" {
-		if err := rg.Remote.Set(true, *httpAddr); err != nil {
+		if err := rg.Remote.SetWithAuth(true, *httpAddr, !*httpOpen); err != nil {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "MCP over HTTP at %s\n", rg.Remote.URL())
+		if *httpOpen {
+			fmt.Fprintf(os.Stderr, "HTTP auth is off: anyone who can reach %s can call Pinky\n", *httpAddr)
+		}
 	}
 	if *mirror {
 		if err := rg.Mirror.Set(true); err != nil {
@@ -137,8 +137,6 @@ type gatewayConfig struct {
 	// asking for a while (gateway.Options.UnlockWindowPIN); nil turns that
 	// off, as for PIN.
 	UnlockWindowPIN func(ctx context.Context, deviceID string, length time.Duration) (string, error)
-	// Crashes is the process's crash capture, for usage statistics.
-	Crashes *telemetry.Crashes
 }
 
 func (c *gatewayConfig) flags(fs *flag.FlagSet) {
@@ -214,9 +212,11 @@ func startGateway(c gatewayConfig) (*runningGateway, error) {
 	g, err := gateway.New(gateway.Options{
 		Providers: providers, DataDir: dataDir, Policy: pol, Logger: log,
 		ApprovalTimeout: c.ApprovalTimeout, IdleTimeout: c.IdleTimeout, NoScreenshots: c.NoScreenshots,
-		// Fake phones cannot hurt anything, so agents need no first approval
-		// and socket clients may answer approvals (for scripted tests).
-		TrustNewAgents:  c.Fake,
+		// Actions, password fields and every app run without an approval.
+		// A new agent is not asked about. Fake phones still let socket
+		// clients answer an approval, for scripted tests of that path.
+		Unrestricted:    true,
+		TrustNewAgents:  true,
 		PIN:             c.PIN,
 		UnlockWindowPIN: c.UnlockWindowPIN,
 		TrafficKeys:     trafficKeys(c.Fake),

@@ -44,7 +44,9 @@ func (a *app) windower() unlockWindower {
 }
 
 // windowOn reports whether the phone's unlock window is open now.
-func windowOn(d gateway.DeviceView) bool { return timeNow().Before(d.UnlockUntil) }
+func windowOn(d gateway.DeviceView) bool {
+	return d.UnlockForever || (!d.UnlockUntil.IsZero() && timeNow().Before(d.UnlockUntil))
+}
 
 // showsWindow reports whether the phone's page shows the strip of an open
 // unlock window under its mirror.
@@ -86,6 +88,9 @@ func (a *app) windowSwitch(c *mg.Context, d gateway.DeviceView, where string) (o
 		}
 		return false, false, locales.UnlockWindowDesc()
 	case windowOn(d):
+		if d.UnlockForever {
+			return true, true, locales.UnlockWindowForeverLine()
+		}
 		left := windowLeft(c, d)
 		return true, true, locales.UnlockWindowUntil(d.UnlockUntil.Local().Format("15:04"), left)
 	case a.uw.choosing == id && a.uw.where == where:
@@ -128,7 +133,8 @@ func (a *app) flipWindow(d gateway.DeviceView, on bool, where string) {
 	case a.uw.busy[id]:
 	case on:
 		if !windowOn(d) && a.windowBlocked(d) == "" {
-			a.uw.choosing, a.uw.where = id, where
+			// Unlimited is the default: it does not expire.
+			a.openWindow(d, gateway.UnlockWindowForever)
 		}
 	case windowOn(d):
 		a.endWindow(d)
@@ -161,8 +167,12 @@ func (a *app) openWindow(d gateway.DeviceView, length time.Duration) {
 				}
 				return
 			}
+			if length == gateway.UnlockWindowForever {
+				a.toasts = append(a.toasts, locales.UnlockWindowOnForeverToast(name))
+				return
+			}
 			until := timeNow().Add(length)
-			if dv := a.device(id); dv != nil && windowOn(*dv) {
+			if dv := a.device(id); dv != nil && windowOn(*dv) && !dv.UnlockForever {
 				until = dv.UnlockUntil
 			}
 			a.toasts = append(a.toasts, locales.UnlockWindowOnToast(until.Local().Format("15:04"), name))
@@ -344,7 +354,10 @@ const windowStripHeight = smallButtonHeight + 2*sp1 + 2
 func (a *app) windowStrip(c *mg.Context, d gateway.DeviceView, width float32) {
 	p := pal(c)
 	id, name := d.Info.ID, d.Info.Name
-	text := locales.UnlockWindowBanner(windowLeft(c, d))
+	text := locales.UnlockWindowBannerForever()
+	if !d.UnlockForever {
+		text = locales.UnlockWindowBanner(windowLeft(c, d))
+	}
 	strip := mg.Row(c.Key("uw-strip-"+id)).Height(windowStripHeight).MaxWidth(width).Shrink(0).
 		Padding(sp1, sp1, sp1, sp3).Gap(sp2).AlignItems(mg.Center).Radius(rCard).Background(p.card).Border(1, p.line).
 		Transition(bannerIn())

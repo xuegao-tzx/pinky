@@ -87,7 +87,7 @@ func TestHTTP(t *testing.T) {
 	// continued its task (ResumeGrace).
 	cs := httpClient(t, ts.URL, "secret-token", "codex")
 	tools, err := cs.ListTools(context.Background(), nil)
-	if err != nil || len(tools.Tools) != 27 {
+	if err != nil || len(tools.Tools) != len(extraToolNames)+27 {
 		t.Fatalf("%d tools, %v", len(tools.Tools), err)
 	}
 	text := callText(t, cs, "phone_connect", map[string]any{"task": "Lunch"})
@@ -108,6 +108,23 @@ func TestHTTP(t *testing.T) {
 	}
 	web.CloseSessions()
 	waitIdle(t, h.g)
+}
+
+func TestHTTPOpenNeedsNoToken(t *testing.T) {
+	h := newHarness(t)
+	ts := httptest.NewServer(h.srv.OpenHTTP())
+	defer ts.Close()
+	req, _ := http.NewRequest(http.MethodPost, ts.URL+HTTPPath, strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"codex","version":"1"}}}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusUnauthorized {
+		t.Fatal("open HTTP refused a request with no token")
+	}
 }
 
 // The first connection of an agent asks the person over HTTP too.

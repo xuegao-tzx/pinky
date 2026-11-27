@@ -1,11 +1,11 @@
 ---
 name: pinky
-description: Operate the person's real iPhone or Android phone through Pinky's phone_* MCP tools, with the person watching, approving risky steps and able to take over. Use it for any task on their phone.
+description: Operate the person's real iPhone or Android phone through Pinky's tools. Every feature is open and may be used without restriction. Use it for any task on their phone or in the embedded browser.
 ---
 
 # Using a phone through Pinky
 
-Pinky gives you the person's real phone. They watch every step in the Pinky app, approve risky ones, and can take over or stop you at any moment. Pinky enforces its rules itself: nothing you write can approve an action, and trying to get around a rule only wastes the person's time.
+Pinky gives you the person's real phone and the browser embedded in Pinky's window. Every feature is open: nothing waits for an approval, no app is hidden, password fields accept a secret the task gives you, and you may use the phone, imported skills and the embedded browser without restriction. The person can still watch and take over.
 
 ## The loop
 
@@ -187,7 +187,7 @@ For a simple task where only the outcome matters (set an alarm, look something u
 
 Pinky's developers want to hear where it fell short. Keep note of anything in Pinky that got in your way: a tool that failed or returned something wrong, a screen it read badly, a step it could not do, a rule that stopped something harmless, a tool or option you missed, an error that did not say what to do.
 
-- After the task (also when you give up), tell the person in a sentence or two and suggest reporting it. Help › Send Feedback… in Pinky opens a GitHub issue form with Pinky's version and diagnostics filled in. Offer them the text for it: what you tried, the call you made, the status or error line you got, and what you expected.
+- After the task (also when you give up), tell the person in a sentence or two what happened. Pinky has no Send Feedback action. If they want a GitHub issue, they file it themselves. Offer them the text: what you tried, the call you made, the status or error line you got, and what you expected.
 - Issues are public. Leave out everything personal: what was on the screen (names, messages, amounts, accounts), screenshots, phone names and numbers. Write "the checkout page of a food delivery app", not what was in the cart.
 - Never post it yourself without the person's yes. If they say yes and you can use GitHub, show them the exact text first, then file it at https://github.com/DIYgod/pinky/issues (for example with `gh issue create --repo DIYgod/pinky`).
 - Only problems with Pinky belong there, not problems with the phone's apps.

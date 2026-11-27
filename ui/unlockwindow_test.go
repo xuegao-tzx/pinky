@@ -88,27 +88,15 @@ func TestUnlockWindowOpenAndEnd(t *testing.T) {
 	if err := tt.Click(locales.UnlockWindowTitle()); err != nil {
 		t.Fatal(err)
 	}
-	tt.Frame()
-	for _, want := range []string{locales.UnlockWindowHowLong(), locales.UnlockWindowFor(1), locales.UnlockWindowFor(4), locales.UnlockWindowFor(8)} {
-		if !hasText(tt, want) {
-			t.Errorf("no %q once it is turned on: %q", want, tt.Texts())
-		}
-	}
-	if got := ta.api.UnlockWindowsOpened(); len(got) != 0 {
-		t.Fatalf("a window opened before a length was picked: %v", got)
-	}
-	if err := tt.Click(locales.UnlockWindowFor(4)); err != nil {
-		t.Fatal(err)
-	}
 	ta.windowSettled(t, "the window to open", true)
-	if got := ta.api.UnlockWindowsOpened(); !slices.Equal(got, []time.Duration{4 * time.Hour}) {
-		t.Fatalf("opened %v, want 4h", got)
+	if got := ta.api.UnlockWindowsOpened(); !slices.Equal(got, []time.Duration{0}) {
+		t.Fatalf("opened %v, want unlimited", got)
 	}
-	if want := locales.UnlockWindowOnToast("18:30", uwName); !slices.Contains(ta.toasts, want) {
+	if want := locales.UnlockWindowOnForeverToast(uwName); !slices.Contains(ta.toasts, want) {
 		t.Errorf("no %q in %q", want, ta.toasts)
 	}
 	tt.Frame()
-	if want := locales.UnlockWindowUntil("18:30", "4 h"); !hasText(tt, want) {
+	if want := locales.UnlockWindowForeverLine(); !hasText(tt, want) {
 		t.Errorf("Settings › Phones does not say %q: %q", want, tt.Texts())
 	}
 	if sw := uwSwitch(t, tt); !sw.Checked || sw.Disabled {
@@ -120,7 +108,7 @@ func TestUnlockWindowOpenAndEnd(t *testing.T) {
 
 	ta.selectPhone(uwPhone)
 	tt.Frame()
-	strip := locales.UnlockWindowBanner("4 h")
+	strip := locales.UnlockWindowBannerForever()
 	if !hasText(tt, strip) {
 		t.Fatalf("no %q under the mirror: %q", strip, tt.Texts())
 	}
@@ -147,28 +135,16 @@ func TestUnlockWindowSwitchOff(t *testing.T) {
 	tt := mg.NewTester(ta.view, 1280, 820)
 	tt.Frame()
 	clickMid(tt, uwSwitch(t, tt).Bounds)
+	ta.windowSettled(t, "the window to open", true)
 	tt.Frame()
-	if sw := uwSwitch(t, tt); !sw.Checked || !hasText(tt, locales.UnlockWindowHowLong()) {
-		t.Fatalf("the switch is %+v, with no lengths: %q", sw, tt.Texts())
+	if sw := uwSwitch(t, tt); !sw.Checked || !hasText(tt, locales.UnlockWindowForeverLine()) {
+		t.Fatalf("the switch is %+v: %q", sw, tt.Texts())
 	}
 	clickMid(tt, uwSwitch(t, tt).Bounds)
+	ta.windowSettled(t, "the window to end", false)
 	tt.Frame()
-	if sw := uwSwitch(t, tt); sw.Checked || hasText(tt, locales.UnlockWindowHowLong()) || ta.uw.choosing != "" {
-		t.Errorf("after the switch went off again it is %+v: %q", sw, tt.Texts())
-	}
-	if err := tt.Click(locales.UnlockWindowTitle()); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	if err := tt.Click(locales.UnlockWindowCancel()); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	if sw := uwSwitch(t, tt); sw.Checked || hasText(tt, locales.UnlockWindowHowLong()) {
-		t.Errorf("after Cancel the switch is %+v: %q", sw, tt.Texts())
-	}
-	if got := ta.api.UnlockWindowsOpened(); len(got) != 0 {
-		t.Fatalf("a window opened: %v", got)
+	if sw := uwSwitch(t, tt); sw.Checked {
+		t.Errorf("after the switch went off it is %+v: %q", sw, tt.Texts())
 	}
 
 	ta.openWindowNow(t, time.Hour)
@@ -230,11 +206,7 @@ func TestUnlockWindowConfirm(t *testing.T) {
 	if err := tt.Click(locales.UnlockWindowTitle()); err != nil {
 		t.Fatal(err)
 	}
-	tt.Frame()
-	if err := tt.Click(locales.UnlockWindowFor(1)); err != nil {
-		t.Fatal(err)
-	}
-	if got := <-asked; got != uwPhone+" 1h0m0s" {
+	if got := <-asked; got != uwPhone+" 0s" {
 		t.Errorf("asked to confirm %q", got)
 	}
 	tt.Frame()
@@ -266,10 +238,6 @@ func TestUnlockWindowConfirm(t *testing.T) {
 	// turned off, or the phone's PIN changed, meanwhile.
 	ta.api.SetUnlockWindowConfirm(func(id string, _ time.Duration) error { return ta.api.EndUnlockWindow(id) })
 	if err := tt.Click(locales.UnlockWindowTitle()); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	if err := tt.Click(locales.UnlockWindowFor(8)); err != nil {
 		t.Fatal(err)
 	}
 	ta.windowSettled(t, "the window that ended meanwhile", false)
@@ -351,39 +319,18 @@ func TestUnlockWindowInMenu(t *testing.T) {
 		t.Fatalf("⋯ has the switch %+v: %q", sw, tt.Texts())
 	}
 	clickMid(tt, uwSwitch(t, tt).Bounds)
-	tt.Frame()
-	if ta.uw.choosing != uwPhone || ta.uw.where != "menu" || !hasText(tt, locales.UnlockWindowHowLong()) {
-		t.Fatalf("no lengths in ⋯: %q", tt.Texts())
-	}
-	tt.Key(0, mg.KeyEscape) // the menu
-	tt.Frame()
-	if ta.more[uwPhone] || ta.uw.choosing != "" {
-		t.Fatalf("after the menu closed: open %v, choosing %q", ta.more[uwPhone], ta.uw.choosing)
-	}
-	if err := tt.Click(locales.PhoneMoreControls()); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	if hasText(tt, locales.UnlockWindowHowLong()) {
-		t.Errorf("the lengths are back with the menu: %q", tt.Texts())
-	}
-	clickMid(tt, uwSwitch(t, tt).Bounds)
-	tt.Frame()
-	if err := tt.Click(locales.UnlockWindowFor(1)); err != nil {
-		t.Fatal(err)
-	}
 	ta.windowSettled(t, "the window to open", true)
 	tt.Frame()
-	if want := locales.UnlockWindowUntil("15:30", "1 h"); !hasText(tt, want) {
+	if want := locales.UnlockWindowForeverLine(); !hasText(tt, want) {
 		t.Errorf("⋯ does not say %q: %q", want, tt.Texts())
 	}
-	if !hasText(tt, locales.UnlockWindowBanner("1 h")) {
+	if !hasText(tt, locales.UnlockWindowBannerForever()) {
 		t.Errorf("no strip under the mirror: %q", tt.Texts())
 	}
 	clickMid(tt, uwSwitch(t, tt).Bounds)
 	ta.windowSettled(t, "the window to end", false)
-	if got := ta.api.UnlockWindowsOpened(); !slices.Equal(got, []time.Duration{time.Hour}) {
-		t.Errorf("opened %v, want 1h", got)
+	if got := ta.api.UnlockWindowsOpened(); !slices.Equal(got, []time.Duration{0}) {
+		t.Errorf("opened %v, want unlimited", got)
 	}
 }
 
@@ -607,24 +554,10 @@ func TestUnlockWindowFits(t *testing.T) {
 			tt.Frame()
 			sw := uwSwitch(t, tt)
 			clickMid(tt, sw.Bounds)
+			ta.windowSettled(t, "the window to open", true)
 			tt.Frame()
-			right := sw.Bounds.X + sw.Bounds.W + 1
-			var last mg.Rect
-			for i, name := range []string{locales.UnlockWindowCancel(), locales.UnlockWindowFor(1), locales.UnlockWindowFor(4), locales.UnlockWindowFor(8)} {
-				b, ok := tt.AccessByRole(mg.RoleButton, name)
-				if !ok {
-					t.Fatalf("no %q in ⋯: %q", name, tt.Texts())
-				}
-				if b.Bounds.X+b.Bounds.W > right {
-					t.Errorf("%q %v goes past the switch's edge %.1f", name, b.Bounds, right)
-				}
-				if i > 1 && b.Bounds.Y == last.Y && b.Bounds.X < last.X+last.W {
-					t.Errorf("%q %v overlaps %v", name, b.Bounds, last)
-				}
-				last = b.Bounds
-			}
-			if r, ok := tt.Find(locales.UnlockWindowHowLong()); !ok || r.H > 2*fsSmall {
-				t.Errorf("%q is %v, not on a line", locales.UnlockWindowHowLong(), r)
+			if !hasText(tt, locales.UnlockWindowForeverLine()) {
+				t.Fatalf("no unlimited line in ⋯: %q", tt.Texts())
 			}
 			tt.Key(0, mg.KeyEscape)
 

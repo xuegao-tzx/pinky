@@ -31841,14 +31841,14 @@ func (msgs Messages) UnlockWindowConfirming() string {
 	return Catalog.Format(msgs.locale, "unlockWindowConfirming", nil)
 }
 
-// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks for up to 8 hours. Agents never see the PIN."
+// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks until you end it. It does not expire. Agents never see th…"
 // in the language the app shows.
 //
 // Under the switch Unlock without asking (unlockWindowTitle), in Settings
 // › Phones and in the ⋯ menu under a phone's mirror, while it is off.
 func UnlockWindowDesc() string { return In(i18n.Locale()).UnlockWindowDesc() }
 
-// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks for up to 8 hours. Agents never see the PIN."
+// UnlockWindowDesc says "Confirm once, and Pinky unlocks the phone for agents' tasks until you end it. It does not expire. Agents never see th…"
 // in the language of msgs.
 //
 // Under the switch Unlock without asking (unlockWindowTitle), in Settings
@@ -35757,4 +35757,652 @@ func PhoneWindowShowInPinky() string { return In(i18n.Locale()).PhoneWindowShowI
 // in Pinky's main window.
 func (msgs Messages) PhoneWindowShowInPinky() string {
 	return Catalog.Format(msgs.locale, "phoneWindowShowInPinky", nil)
+}
+
+// SettingsSectionAutomation says "Automation"
+// in the language the app shows.
+//
+// Settings: the tab for skills, app routes, the embedded browser and remote
+// MCP auth.
+func SettingsSectionAutomation() string { return In(i18n.Locale()).SettingsSectionAutomation() }
+
+// SettingsSectionAutomation says "Automation"
+// in the language of msgs.
+//
+// Settings: the tab for skills, app routes, the embedded browser and remote
+// MCP auth.
+func (msgs Messages) SettingsSectionAutomation() string {
+	return Catalog.Format(msgs.locale, "settingsSectionAutomation", nil)
+}
+
+// SettingsAutomationTitle says "Automation"
+// in the language the app shows.
+//
+// Settings › Automation: the page title.
+func SettingsAutomationTitle() string { return In(i18n.Locale()).SettingsAutomationTitle() }
+
+// SettingsAutomationTitle says "Automation"
+// in the language of msgs.
+//
+// Settings › Automation: the page title.
+func (msgs Messages) SettingsAutomationTitle() string {
+	return Catalog.Format(msgs.locale, "settingsAutomationTitle", nil)
+}
+
+// SettingsAutomationDesc says "Imported skills, app routes and the embedded browser. Device actions run without an approval dialog."
+// in the language the app shows.
+//
+// Settings › Automation: the sentence under the title.
+func SettingsAutomationDesc() string { return In(i18n.Locale()).SettingsAutomationDesc() }
+
+// SettingsAutomationDesc says "Imported skills, app routes and the embedded browser. Device actions run without an approval dialog."
+// in the language of msgs.
+//
+// Settings › Automation: the sentence under the title.
+func (msgs Messages) SettingsAutomationDesc() string {
+	return Catalog.Format(msgs.locale, "settingsAutomationDesc", nil)
+}
+
+// SettingsAutomationUnavailable says "Automation is not connected in this window."
+// in the language the app shows.
+//
+// Settings › Automation and the browser page when the libraries are not
+// wired.
+func SettingsAutomationUnavailable() string { return In(i18n.Locale()).SettingsAutomationUnavailable() }
+
+// SettingsAutomationUnavailable says "Automation is not connected in this window."
+// in the language of msgs.
+//
+// Settings › Automation and the browser page when the libraries are not
+// wired.
+func (msgs Messages) SettingsAutomationUnavailable() string {
+	return Catalog.Format(msgs.locale, "settingsAutomationUnavailable", nil)
+}
+
+// SettingsSkillsHeading says "Skills"
+// in the language the app shows.
+//
+// Settings › Automation: the skills group heading.
+func SettingsSkillsHeading() string { return In(i18n.Locale()).SettingsSkillsHeading() }
+
+// SettingsSkillsHeading says "Skills"
+// in the language of msgs.
+//
+// Settings › Automation: the skills group heading.
+func (msgs Messages) SettingsSkillsHeading() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsHeading", nil)
+}
+
+// SettingsSkillsDesc says "Import a folder that contains SKILL.md, or a folder of skill folders. Enabled skills are given to Ask Pinky."
+// in the language the app shows.
+//
+// Settings › Automation: what the skills group is for.
+func SettingsSkillsDesc() string { return In(i18n.Locale()).SettingsSkillsDesc() }
+
+// SettingsSkillsDesc says "Import a folder that contains SKILL.md, or a folder of skill folders. Enabled skills are given to Ask Pinky."
+// in the language of msgs.
+//
+// Settings › Automation: what the skills group is for.
+func (msgs Messages) SettingsSkillsDesc() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsDesc", nil)
+}
+
+// SettingsSkillsPath says "Folder"
+// in the language the app shows.
+//
+// Settings › Automation: the label of the folder field.
+func SettingsSkillsPath() string { return In(i18n.Locale()).SettingsSkillsPath() }
+
+// SettingsSkillsPath says "Folder"
+// in the language of msgs.
+//
+// Settings › Automation: the label of the folder field.
+func (msgs Messages) SettingsSkillsPath() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsPath", nil)
+}
+
+// SettingsSkillsImport says "Import"
+// in the language the app shows.
+//
+// Settings › Automation: the button that imports the folder.
+func SettingsSkillsImport() string { return In(i18n.Locale()).SettingsSkillsImport() }
+
+// SettingsSkillsImport says "Import"
+// in the language of msgs.
+//
+// Settings › Automation: the button that imports the folder.
+func (msgs Messages) SettingsSkillsImport() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsImport", nil)
+}
+
+// SettingsSkillsRefresh says "Refresh"
+// in the language the app shows.
+//
+// Settings › Automation: the button that reloads skills from disk.
+func SettingsSkillsRefresh() string { return In(i18n.Locale()).SettingsSkillsRefresh() }
+
+// SettingsSkillsRefresh says "Refresh"
+// in the language of msgs.
+//
+// Settings › Automation: the button that reloads skills from disk.
+func (msgs Messages) SettingsSkillsRefresh() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsRefresh", nil)
+}
+
+// SettingsSkillsRemove says "Remove"
+// in the language the app shows.
+//
+// Settings › Automation: the button that removes one skill.
+func SettingsSkillsRemove() string { return In(i18n.Locale()).SettingsSkillsRemove() }
+
+// SettingsSkillsRemove says "Remove"
+// in the language of msgs.
+//
+// Settings › Automation: the button that removes one skill.
+func (msgs Messages) SettingsSkillsRemove() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsRemove", nil)
+}
+
+// SettingsSkillsEmpty says "No skills imported."
+// in the language the app shows.
+//
+// Settings › Automation: shown when no skill folder is imported.
+func SettingsSkillsEmpty() string { return In(i18n.Locale()).SettingsSkillsEmpty() }
+
+// SettingsSkillsEmpty says "No skills imported."
+// in the language of msgs.
+//
+// Settings › Automation: shown when no skill folder is imported.
+func (msgs Messages) SettingsSkillsEmpty() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsEmpty", nil)
+}
+
+// SettingsSkillsOn says "On"
+// in the language the app shows.
+//
+// Settings › Automation: a skill that Ask Pinky can use.
+func SettingsSkillsOn() string { return In(i18n.Locale()).SettingsSkillsOn() }
+
+// SettingsSkillsOn says "On"
+// in the language of msgs.
+//
+// Settings › Automation: a skill that Ask Pinky can use.
+func (msgs Messages) SettingsSkillsOn() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsOn", nil)
+}
+
+// SettingsSkillsOff says "Off"
+// in the language the app shows.
+//
+// Settings › Automation: a skill that stays imported but is not given to
+// Ask Pinky.
+func SettingsSkillsOff() string { return In(i18n.Locale()).SettingsSkillsOff() }
+
+// SettingsSkillsOff says "Off"
+// in the language of msgs.
+//
+// Settings › Automation: a skill that stays imported but is not given to
+// Ask Pinky.
+func (msgs Messages) SettingsSkillsOff() string {
+	return Catalog.Format(msgs.locale, "settingsSkillsOff", nil)
+}
+
+// SettingsRoutesHeading says "App routes"
+// in the language the app shows.
+//
+// Settings › Automation: the deep-link presets heading.
+func SettingsRoutesHeading() string { return In(i18n.Locale()).SettingsRoutesHeading() }
+
+// SettingsRoutesHeading says "App routes"
+// in the language of msgs.
+//
+// Settings › Automation: the deep-link presets heading.
+func (msgs Messages) SettingsRoutesHeading() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesHeading", nil)
+}
+
+// SettingsRoutesDesc says "Deep links Pinky can open on Android and iPhone. The package name and bundle ID are yours to set."
+// in the language the app shows.
+//
+// Settings › Automation: what the app routes group is for.
+func SettingsRoutesDesc() string { return In(i18n.Locale()).SettingsRoutesDesc() }
+
+// SettingsRoutesDesc says "Deep links Pinky can open on Android and iPhone. The package name and bundle ID are yours to set."
+// in the language of msgs.
+//
+// Settings › Automation: what the app routes group is for.
+func (msgs Messages) SettingsRoutesDesc() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesDesc", nil)
+}
+
+// SettingsRoutesName says "Name"
+// in the language the app shows.
+//
+// Settings › Automation: the preset name field.
+func SettingsRoutesName() string { return In(i18n.Locale()).SettingsRoutesName() }
+
+// SettingsRoutesName says "Name"
+// in the language of msgs.
+//
+// Settings › Automation: the preset name field.
+func (msgs Messages) SettingsRoutesName() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesName", nil)
+}
+
+// SettingsRoutesScheme says "URL scheme"
+// in the language the app shows.
+//
+// Settings › Automation: the scheme prefix field, such as
+// hellobike://hellobike.com/.
+func SettingsRoutesScheme() string { return In(i18n.Locale()).SettingsRoutesScheme() }
+
+// SettingsRoutesScheme says "URL scheme"
+// in the language of msgs.
+//
+// Settings › Automation: the scheme prefix field, such as
+// hellobike://hellobike.com/.
+func (msgs Messages) SettingsRoutesScheme() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesScheme", nil)
+}
+
+// SettingsRoutesAndroid says "Android package"
+// in the language the app shows.
+//
+// Settings › Automation: the Android package name field.
+func SettingsRoutesAndroid() string { return In(i18n.Locale()).SettingsRoutesAndroid() }
+
+// SettingsRoutesAndroid says "Android package"
+// in the language of msgs.
+//
+// Settings › Automation: the Android package name field.
+func (msgs Messages) SettingsRoutesAndroid() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesAndroid", nil)
+}
+
+// SettingsRoutesIOS says "iOS bundle ID"
+// in the language the app shows.
+//
+// Settings › Automation: the iOS bundle id field.
+func SettingsRoutesIOS() string { return In(i18n.Locale()).SettingsRoutesIOS() }
+
+// SettingsRoutesIOS says "iOS bundle ID"
+// in the language of msgs.
+//
+// Settings › Automation: the iOS bundle id field.
+func (msgs Messages) SettingsRoutesIOS() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesIOS", nil)
+}
+
+// SettingsRoutesPath says "Route path"
+// in the language the app shows.
+//
+// Settings › Automation: a route template, which may use {scheme}.
+func SettingsRoutesPath() string { return In(i18n.Locale()).SettingsRoutesPath() }
+
+// SettingsRoutesPath says "Route path"
+// in the language of msgs.
+//
+// Settings › Automation: a route template, which may use {scheme}.
+func (msgs Messages) SettingsRoutesPath() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesPath", nil)
+}
+
+// SettingsRoutesAdd says "Add"
+// in the language the app shows.
+//
+// Settings › Automation: the button that saves a preset.
+func SettingsRoutesAdd() string { return In(i18n.Locale()).SettingsRoutesAdd() }
+
+// SettingsRoutesAdd says "Add"
+// in the language of msgs.
+//
+// Settings › Automation: the button that saves a preset.
+func (msgs Messages) SettingsRoutesAdd() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesAdd", nil)
+}
+
+// SettingsRoutesEmpty says "No app routes yet."
+// in the language the app shows.
+//
+// Settings › Automation: shown when no preset is saved.
+func SettingsRoutesEmpty() string { return In(i18n.Locale()).SettingsRoutesEmpty() }
+
+// SettingsRoutesEmpty says "No app routes yet."
+// in the language of msgs.
+//
+// Settings › Automation: shown when no preset is saved.
+func (msgs Messages) SettingsRoutesEmpty() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesEmpty", nil)
+}
+
+// SettingsRoutesRemove says "Remove"
+// in the language the app shows.
+//
+// Settings › Automation: the button that removes a preset.
+func SettingsRoutesRemove() string { return In(i18n.Locale()).SettingsRoutesRemove() }
+
+// SettingsRoutesRemove says "Remove"
+// in the language of msgs.
+//
+// Settings › Automation: the button that removes a preset.
+func (msgs Messages) SettingsRoutesRemove() string {
+	return Catalog.Format(msgs.locale, "settingsRoutesRemove", nil)
+}
+
+// SidebarBrowser says "Browser"
+// in the language the app shows.
+//
+// Sidebar: opens the embedded browser page.
+func SidebarBrowser() string { return In(i18n.Locale()).SidebarBrowser() }
+
+// SidebarBrowser says "Browser"
+// in the language of msgs.
+//
+// Sidebar: opens the embedded browser page.
+func (msgs Messages) SidebarBrowser() string {
+	return Catalog.Format(msgs.locale, "sidebarBrowser", nil)
+}
+
+// BrowserTitle says "Browser"
+// in the language the app shows.
+//
+// Embedded browser page: the title.
+func BrowserTitle() string { return In(i18n.Locale()).BrowserTitle() }
+
+// BrowserTitle says "Browser"
+// in the language of msgs.
+//
+// Embedded browser page: the title.
+func (msgs Messages) BrowserTitle() string {
+	return Catalog.Format(msgs.locale, "browserTitle", nil)
+}
+
+// BrowserDesc says "A page Pinky and its model can drive, for a simulator site or any other page. Cookies and saved addresses stay on thi…"
+// in the language the app shows.
+//
+// Embedded browser page: the sentence under the title.
+func BrowserDesc() string { return In(i18n.Locale()).BrowserDesc() }
+
+// BrowserDesc says "A page Pinky and its model can drive, for a simulator site or any other page. Cookies and saved addresses stay on thi…"
+// in the language of msgs.
+//
+// Embedded browser page: the sentence under the title.
+func (msgs Messages) BrowserDesc() string {
+	return Catalog.Format(msgs.locale, "browserDesc", nil)
+}
+
+// BrowserURL says "Address"
+// in the language the app shows.
+//
+// Embedded browser: the address field.
+func BrowserURL() string { return In(i18n.Locale()).BrowserURL() }
+
+// BrowserURL says "Address"
+// in the language of msgs.
+//
+// Embedded browser: the address field.
+func (msgs Messages) BrowserURL() string {
+	return Catalog.Format(msgs.locale, "browserURL", nil)
+}
+
+// BrowserGo says "Go"
+// in the language the app shows.
+//
+// Embedded browser: opens the address.
+func BrowserGo() string { return In(i18n.Locale()).BrowserGo() }
+
+// BrowserGo says "Go"
+// in the language of msgs.
+//
+// Embedded browser: opens the address.
+func (msgs Messages) BrowserGo() string {
+	return Catalog.Format(msgs.locale, "browserGo", nil)
+}
+
+// BrowserBack says "Back"
+// in the language the app shows.
+//
+// Embedded browser: the previous page.
+func BrowserBack() string { return In(i18n.Locale()).BrowserBack() }
+
+// BrowserBack says "Back"
+// in the language of msgs.
+//
+// Embedded browser: the previous page.
+func (msgs Messages) BrowserBack() string {
+	return Catalog.Format(msgs.locale, "browserBack", nil)
+}
+
+// BrowserForward says "Forward"
+// in the language the app shows.
+//
+// Embedded browser: the next page.
+func BrowserForward() string { return In(i18n.Locale()).BrowserForward() }
+
+// BrowserForward says "Forward"
+// in the language of msgs.
+//
+// Embedded browser: the next page.
+func (msgs Messages) BrowserForward() string {
+	return Catalog.Format(msgs.locale, "browserForward", nil)
+}
+
+// BrowserReload says "Reload"
+// in the language the app shows.
+//
+// Embedded browser: loads the page again.
+func BrowserReload() string { return In(i18n.Locale()).BrowserReload() }
+
+// BrowserReload says "Reload"
+// in the language of msgs.
+//
+// Embedded browser: loads the page again.
+func (msgs Messages) BrowserReload() string {
+	return Catalog.Format(msgs.locale, "browserReload", nil)
+}
+
+// BrowserSave says "Save address"
+// in the language the app shows.
+//
+// Embedded browser: remembers the current address.
+func BrowserSave() string { return In(i18n.Locale()).BrowserSave() }
+
+// BrowserSave says "Save address"
+// in the language of msgs.
+//
+// Embedded browser: remembers the current address.
+func (msgs Messages) BrowserSave() string {
+	return Catalog.Format(msgs.locale, "browserSave", nil)
+}
+
+// BrowserSaved says "Saved addresses"
+// in the language the app shows.
+//
+// Embedded browser: the heading above saved addresses.
+func BrowserSaved() string { return In(i18n.Locale()).BrowserSaved() }
+
+// BrowserSaved says "Saved addresses"
+// in the language of msgs.
+//
+// Embedded browser: the heading above saved addresses.
+func (msgs Messages) BrowserSaved() string {
+	return Catalog.Format(msgs.locale, "browserSaved", nil)
+}
+
+// BrowserEmpty says "No page open."
+// in the language the app shows.
+//
+// Embedded browser: shown before an address is opened.
+func BrowserEmpty() string { return In(i18n.Locale()).BrowserEmpty() }
+
+// BrowserEmpty says "No page open."
+// in the language of msgs.
+//
+// Embedded browser: shown before an address is opened.
+func (msgs Messages) BrowserEmpty() string {
+	return Catalog.Format(msgs.locale, "browserEmpty", nil)
+}
+
+// BrowserWindow says "Open browser window"
+// in the language the app shows.
+//
+// Embedded browser: opens Chrome or Chromium on this page so a person can
+// sign in.
+func BrowserWindow() string { return In(i18n.Locale()).BrowserWindow() }
+
+// BrowserWindow says "Open browser window"
+// in the language of msgs.
+//
+// Embedded browser: opens Chrome or Chromium on this page so a person can
+// sign in.
+func (msgs Messages) BrowserWindow() string {
+	return Catalog.Format(msgs.locale, "browserWindow", nil)
+}
+
+// BrowserWindowOpen says "Pinky's browser window is open. Sign in there; the tools use the same page."
+// in the language the app shows.
+//
+// Embedded browser: shown after the Chrome window opens.
+func BrowserWindowOpen() string { return In(i18n.Locale()).BrowserWindowOpen() }
+
+// BrowserWindowOpen says "Pinky's browser window is open. Sign in there; the tools use the same page."
+// in the language of msgs.
+//
+// Embedded browser: shown after the Chrome window opens.
+func (msgs Messages) BrowserWindowOpen() string {
+	return Catalog.Format(msgs.locale, "browserWindowOpen", nil)
+}
+
+// RemoteAuthToggle says "Require the agent token"
+// in the language the app shows.
+//
+// Settings › Automation: when on, remote MCP needs the bearer token.
+func RemoteAuthToggle() string { return In(i18n.Locale()).RemoteAuthToggle() }
+
+// RemoteAuthToggle says "Require the agent token"
+// in the language of msgs.
+//
+// Settings › Automation: when on, remote MCP needs the bearer token.
+func (msgs Messages) RemoteAuthToggle() string {
+	return Catalog.Format(msgs.locale, "remoteAuthToggle", nil)
+}
+
+// RemoteAuthDesc says "Off lets any client that can reach the address call Pinky. Leave it on outside a network you trust."
+// in the language the app shows.
+//
+// Settings › Automation: the note under Require the agent token.
+func RemoteAuthDesc() string { return In(i18n.Locale()).RemoteAuthDesc() }
+
+// RemoteAuthDesc says "Off lets any client that can reach the address call Pinky. Leave it on outside a network you trust."
+// in the language of msgs.
+//
+// Settings › Automation: the note under Require the agent token.
+func (msgs Messages) RemoteAuthDesc() string {
+	return Catalog.Format(msgs.locale, "remoteAuthDesc", nil)
+}
+
+// UnlockWindowForeverLine says "On until you end it. It does not expire."
+// in the language the app shows.
+//
+// Unlock without asking, while it does not expire: the line under the
+// switch.
+func UnlockWindowForeverLine() string { return In(i18n.Locale()).UnlockWindowForeverLine() }
+
+// UnlockWindowForeverLine says "On until you end it. It does not expire."
+// in the language of msgs.
+//
+// Unlock without asking, while it does not expire: the line under the
+// switch.
+func (msgs Messages) UnlockWindowForeverLine() string {
+	return Catalog.Format(msgs.locale, "unlockWindowForeverLine", nil)
+}
+
+// UnlockWindowBannerForever says "Unlock without asking"
+// in the language the app shows.
+//
+// The strip under the phone while unlock without asking does not expire.
+func UnlockWindowBannerForever() string { return In(i18n.Locale()).UnlockWindowBannerForever() }
+
+// UnlockWindowBannerForever says "Unlock without asking"
+// in the language of msgs.
+//
+// The strip under the phone while unlock without asking does not expire.
+func (msgs Messages) UnlockWindowBannerForever() string {
+	return Catalog.Format(msgs.locale, "unlockWindowBannerForever", nil)
+}
+
+// UnlockWindowOnForeverToast says "Unlock without asking is on for {name}. It does not expire."
+// in the language the app shows.
+//
+// Toast after unlock without asking is turned on with no expiry. name is
+// the phone.
+func UnlockWindowOnForeverToast(name string) string {
+	return In(i18n.Locale()).UnlockWindowOnForeverToast(name)
+}
+
+// UnlockWindowOnForeverToast says "Unlock without asking is on for {name}. It does not expire."
+// in the language of msgs.
+//
+// Toast after unlock without asking is turned on with no expiry. name is
+// the phone.
+func (msgs Messages) UnlockWindowOnForeverToast(name string) string {
+	return Catalog.Format(msgs.locale, "unlockWindowOnForeverToast", map[string]any{"name": name})
+}
+
+// BrowserNewTab says "New tab"
+// in the language the app shows.
+//
+// Embedded browser: the button that opens another tab.
+func BrowserNewTab() string { return In(i18n.Locale()).BrowserNewTab() }
+
+// BrowserNewTab says "New tab"
+// in the language of msgs.
+//
+// Embedded browser: the button that opens another tab.
+func (msgs Messages) BrowserNewTab() string {
+	return Catalog.Format(msgs.locale, "browserNewTab", nil)
+}
+
+// BrowserCloseTab says "Close tab"
+// in the language the app shows.
+//
+// Embedded browser: the button that closes the current tab.
+func BrowserCloseTab() string { return In(i18n.Locale()).BrowserCloseTab() }
+
+// BrowserCloseTab says "Close tab"
+// in the language of msgs.
+//
+// Embedded browser: the button that closes the current tab.
+func (msgs Messages) BrowserCloseTab() string {
+	return Catalog.Format(msgs.locale, "browserCloseTab", nil)
+}
+
+// BrowserEmbedded says "The page is inside this window. Sign in here; Pinky keeps the login."
+// in the language the app shows.
+//
+// Embedded browser: the note that the page is inside Pinky's window and the
+// login is kept.
+func BrowserEmbedded() string { return In(i18n.Locale()).BrowserEmbedded() }
+
+// BrowserEmbedded says "The page is inside this window. Sign in here; Pinky keeps the login."
+// in the language of msgs.
+//
+// Embedded browser: the note that the page is inside Pinky's window and the
+// login is kept.
+func (msgs Messages) BrowserEmbedded() string {
+	return Catalog.Format(msgs.locale, "browserEmbedded", nil)
+}
+
+// BrowserNoWindow says "The browser is embedded in Pinky's window. Open Pinky to use it."
+// in the language the app shows.
+//
+// Embedded browser tools, when Pinky's window is not open.
+func BrowserNoWindow() string { return In(i18n.Locale()).BrowserNoWindow() }
+
+// BrowserNoWindow says "The browser is embedded in Pinky's window. Open Pinky to use it."
+// in the language of msgs.
+//
+// Embedded browser tools, when Pinky's window is not open.
+func (msgs Messages) BrowserNoWindow() string {
+	return Catalog.Format(msgs.locale, "browserNoWindow", nil)
 }

@@ -2,17 +2,13 @@ package ui
 
 import (
 	"context"
-	"errors"
 	"image/png"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/egoist/mygo"
 	mg "github.com/egoist/mygo/ui"
 
 	"github.com/DIYgod/pinky/internal/telemetry"
@@ -112,156 +108,42 @@ func TestPrivacySettings(t *testing.T) {
 	ta.tel.Count("runs.started")
 	ta.page, ta.set.sec = pageSettings, secPrivacy
 	tt := mg.NewTester(ta.view, 1280, 820)
-	for _, want := range []string{"Share anonymous usage statistics and crash reports", "What's shared", "Send feedback…"} {
-		if !hasText(tt, want) {
-			t.Errorf("no %q in %q", want, tt.Texts())
+	for _, gone := range []string{"Share anonymous usage statistics and crash reports", "What's shared", "Send feedback…"} {
+		if hasText(tt, gone) {
+			t.Errorf("%q is still in Settings: %q", gone, tt.Texts())
 		}
 	}
-	if err := tt.Click("Show what's shared"); err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{"What Pinky shares", `"install_id"`, `"runs.started": 1`, "never include what is on your phones' screens"} {
-		if !hasText(tt, want) {
-			t.Errorf("no %q in %q", want, tt.Texts())
-		}
-	}
-	if err := tt.Click("Close"); err != nil {
-		t.Fatal(err)
-	}
-	if hasText(tt, "What Pinky shares") {
-		t.Fatal("the dialog stayed open")
-	}
-
-	if err := tt.Click("Share anonymous usage statistics and crash reports"); err != nil {
-		t.Fatal(err)
-	}
-	ta.eventually(t, tt, "usage statistics off", func() bool { return !ta.tel.Usage() })
-	if s, _ := ta.lastChange(); s.UsageStats {
-		t.Fatal("the switch did not save")
-	}
-	if n := len(ta.tel.Report().Counts); n != 0 {
-		t.Fatalf("counts kept after turning off: %v", ta.tel.Report().Counts)
-	}
-
-	t.Setenv("DO_NOT_TRACK", "1")
-	tt.Frame()
-	if !hasText(tt, "Off: DO_NOT_TRACK is set on this computer.") {
-		t.Fatalf("DO_NOT_TRACK not shown: %q", tt.Texts())
-	}
-}
-
-// openedIssue returns the query of the GitHub issue the view opened.
-func openedIssue(t *testing.T, tt *mg.Tester) url.Values {
-	t.Helper()
-	opened := tt.OpenedURLs()
-	if len(opened) != 1 {
-		t.Fatalf("opened %q", opened)
-	}
-	u, err := url.Parse(opened[0])
-	if err != nil || u.Host != "github.com" || u.Path != "/"+telemetry.IssueRepo+"/issues/new" {
-		t.Fatalf("opened %q", opened[0])
-	}
-	return u.Query()
 }
 
 func TestFeedbackOpensAGitHubIssue(t *testing.T) {
 	ta := newTelApp(t, &reports{})
 	ta.page, ta.set.sec = pageSettings, secAdvanced
 	tt := mg.NewTester(ta.view, 1280, 820)
-	if err := tt.Click("Send feedback…"); err != nil {
-		t.Fatal(err)
-	}
-	ta.eventually(t, tt, "the diagnostics", func() bool { return !ta.t.fb.reading })
-	for _, want := range []string{"What happened, or what would make Pinky better?", "Issues are public."} {
-		if !hasText(tt, want) {
-			t.Fatalf("no %q in %q", want, tt.Texts())
-		}
-	}
-	tt.Type("The mirror froze after I unlocked the phone.")
-	if err := tt.Click("Review diagnostics"); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	if !hasText(tt, "Phones (1):") || !hasText(tt, "Pinky 1.2.3") {
-		t.Fatalf("diagnostics: %q", tt.Texts())
-	}
-	if err := tt.Click("Open on GitHub"); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	q := openedIssue(t, tt)
-	if q.Get("template") != telemetry.IssueTemplate || q.Get("title") != "The mirror froze after I unlocked the phone." ||
-		q.Get("message") != "The mirror froze after I unlocked the phone." || !strings.HasPrefix(q.Get("version"), "Pinky 1.2.3 · ") ||
-		!strings.Contains(q.Get("diagnostics"), "Phones (1):") {
-		t.Fatalf("issue %v", q)
-	}
-	for _, d := range ta.devices {
-		if strings.Contains(q.Get("diagnostics"), d.Info.ID) {
-			t.Fatalf("the diagnostics name the phone %q", d.Info.ID)
-		}
-	}
-	if ta.t.fb.open || ta.t.fb.message != "" {
-		t.Fatalf("the dialog stayed open with its draft: %+v", ta.t.fb)
+	if hasText(tt, "Send feedback…") {
+		t.Fatal("Send feedback is still in Settings")
 	}
 }
 
 func TestFeedbackWithoutDiagnostics(t *testing.T) {
-	ta := newTelApp(t, nil) // a development build: feedback needs no backend
+	ta := newTelApp(t, nil)
 	tt := mg.NewTester(ta.view, 1280, 820)
-	ta.openFeedback()
-	ta.eventually(t, tt, "the diagnostics", func() bool { return !ta.t.fb.reading })
-	if err := tt.Click("Title"); err != nil {
-		t.Fatal(err)
-	}
-	tt.Type("Dark icon")
-	if err := tt.Click("Message"); err != nil {
-		t.Fatal(err)
-	}
-	tt.Type("Please add one.")
-	if err := tt.Click("Attach diagnostics: versions, settings, phone models and Pinky's recent logs"); err != nil {
-		t.Fatal(err)
-	}
-	if err := tt.Click("Copy feedback"); err != nil {
-		t.Fatal(err)
-	}
-	if got := tt.Clipboard(); !strings.HasPrefix(got, "Dark icon\n\nPlease add one.") || strings.Contains(got, "Phones (") {
-		t.Fatalf("clipboard %q", got)
-	}
-	if err := tt.Click("Open on GitHub"); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	q := openedIssue(t, tt)
-	if q.Get("title") != "Dark icon" || q.Get("message") != "Please add one." || q.Has("diagnostics") || q.Get("version") == "" {
-		t.Fatalf("issue %v", q)
+	if hasText(tt, "Send feedback…") {
+		t.Fatal("Send feedback is still shown")
 	}
 }
 
 func TestFeedbackWhenTheBrowserFails(t *testing.T) {
 	ta := newTelApp(t, &reports{})
 	tt := mg.NewTester(ta.view, 1280, 820)
-	tt.FailOpenURL(errors.New("no browser"))
-	ta.openFeedback()
-	ta.eventually(t, tt, "the diagnostics", func() bool { return !ta.t.fb.reading })
-	tt.Type("Hi")
-	if err := tt.Click("Open on GitHub"); err != nil {
-		t.Fatal(err)
-	}
-	tt.Frame()
-	if !hasText(tt, "Couldn't open the browser") || !ta.t.fb.open || ta.t.fb.message != "Hi" {
-		t.Fatalf("after a failed open: %q, %+v", tt.Texts(), ta.t.fb)
+	if hasText(tt, "Send feedback…") {
+		t.Fatal("Send feedback is still shown")
 	}
 }
 
 func TestMenusOfferFeedback(t *testing.T) {
 	ta := newTelApp(t, &reports{})
-	help := ta.helpMenu()
-	if help == nil || len(help.Submenu) != 1 || help.Submenu[0].Label != "Send Feedback…" {
-		t.Fatalf("help menu %+v", help)
-	}
-	help.Submenu[0].Click(help.Submenu[0], (*mygo.Window)(nil))
-	if !ta.t.fb.open {
-		t.Fatal("Send Feedback… did not open the dialog")
+	if help := ta.helpMenu(); help != nil {
+		t.Fatalf("help menu still offers feedback: %+v", help)
 	}
 	plain := newTestApp(t, fakeapi.OnePhone)
 	if plain.helpMenu() != nil {

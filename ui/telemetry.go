@@ -2,7 +2,6 @@ package ui
 
 import (
 	"encoding/json"
-	"runtime"
 
 	"github.com/egoist/mygo"
 	mg "github.com/egoist/mygo/ui"
@@ -109,18 +108,7 @@ func (a *app) privacyTelemetry(c *mg.Context) {
 }
 
 // helpMenu is the menu bar's Help menu, with Send Feedback.
-func (a *app) helpMenu() *mygo.MenuItem {
-	if a.tel() == nil {
-		return nil
-	}
-	items := []*mygo.MenuItem{
-		{Label: locales.TelSendFeedbackMenu(), Click: func(*mygo.MenuItem, *mygo.Window) { a.openFeedback() }},
-	}
-	if runtime.GOOS == "darwin" {
-		return &mygo.MenuItem{Role: mygo.RoleHelp, Submenu: items}
-	}
-	return &mygo.MenuItem{Label: locales.TelHelpMenu(), Submenu: items}
-}
+func (a *app) helpMenu() *mygo.MenuItem { return nil }
 
 // feedbackLink is Send Feedback at the foot of Settings' sections.
 func (a *app) feedbackLink(c *mg.Context) {

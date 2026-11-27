@@ -11652,7 +11652,7 @@
   "@unlockWindowConfirming": {
     "description": "Under the switch Unlock without asking (unlockWindowTitle) while the system asks the person to confirm with Touch ID, Windows Hello or the keyring's password."
   },
-  "unlockWindowDesc": "Confirm once, and Pinky unlocks the phone for agents' tasks for up to 8 hours. Agents never see the PIN.",
+  "unlockWindowDesc": "Confirm once, and Pinky unlocks the phone for agents' tasks until you end it. It does not expire. Agents never see the PIN.",
   "@unlockWindowDesc": {
     "description": "Under the switch Unlock without asking (unlockWindowTitle), in Settings › Phones and in the ⋯ menu under a phone's mirror, while it is off."
   },
@@ -13089,5 +13089,185 @@
   "phoneWindowShowInPinky": "Show in Pinky",
   "@phoneWindowShowInPinky": {
     "description": "Button in a phone's own window while the phone shows no live screen (offline, paused, connecting, waiting for a step): opens the phone's page in Pinky's main window."
+  },
+  "settingsSectionAutomation": "Automation",
+  "@settingsSectionAutomation": {
+    "description": "Settings: the tab for skills, app routes, the embedded browser and remote MCP auth."
+  },
+  "settingsAutomationTitle": "Automation",
+  "@settingsAutomationTitle": {
+    "description": "Settings › Automation: the page title."
+  },
+  "settingsAutomationDesc": "Imported skills, app routes and the embedded browser. Device actions run without an approval dialog.",
+  "@settingsAutomationDesc": {
+    "description": "Settings › Automation: the sentence under the title."
+  },
+  "settingsAutomationUnavailable": "Automation is not connected in this window.",
+  "@settingsAutomationUnavailable": {
+    "description": "Settings › Automation and the browser page when the libraries are not wired."
+  },
+  "settingsSkillsHeading": "Skills",
+  "@settingsSkillsHeading": {
+    "description": "Settings › Automation: the skills group heading."
+  },
+  "settingsSkillsDesc": "Import a folder that contains SKILL.md, or a folder of skill folders. Enabled skills are given to Ask Pinky.",
+  "@settingsSkillsDesc": {
+    "description": "Settings › Automation: what the skills group is for."
+  },
+  "settingsSkillsPath": "Folder",
+  "@settingsSkillsPath": {
+    "description": "Settings › Automation: the label of the folder field."
+  },
+  "settingsSkillsImport": "Import",
+  "@settingsSkillsImport": {
+    "description": "Settings › Automation: the button that imports the folder."
+  },
+  "settingsSkillsRefresh": "Refresh",
+  "@settingsSkillsRefresh": {
+    "description": "Settings › Automation: the button that reloads skills from disk."
+  },
+  "settingsSkillsRemove": "Remove",
+  "@settingsSkillsRemove": {
+    "description": "Settings › Automation: the button that removes one skill."
+  },
+  "settingsSkillsEmpty": "No skills imported.",
+  "@settingsSkillsEmpty": {
+    "description": "Settings › Automation: shown when no skill folder is imported."
+  },
+  "settingsSkillsOn": "On",
+  "@settingsSkillsOn": {
+    "description": "Settings › Automation: a skill that Ask Pinky can use."
+  },
+  "settingsSkillsOff": "Off",
+  "@settingsSkillsOff": {
+    "description": "Settings › Automation: a skill that stays imported but is not given to Ask Pinky."
+  },
+  "settingsRoutesHeading": "App routes",
+  "@settingsRoutesHeading": {
+    "description": "Settings › Automation: the deep-link presets heading."
+  },
+  "settingsRoutesDesc": "Deep links Pinky can open on Android and iPhone. The package name and bundle ID are yours to set.",
+  "@settingsRoutesDesc": {
+    "description": "Settings › Automation: what the app routes group is for."
+  },
+  "settingsRoutesName": "Name",
+  "@settingsRoutesName": {
+    "description": "Settings › Automation: the preset name field."
+  },
+  "settingsRoutesScheme": "URL scheme",
+  "@settingsRoutesScheme": {
+    "description": "Settings › Automation: the scheme prefix field, such as hellobike://hellobike.com/."
+  },
+  "settingsRoutesAndroid": "Android package",
+  "@settingsRoutesAndroid": {
+    "description": "Settings › Automation: the Android package name field."
+  },
+  "settingsRoutesIOS": "iOS bundle ID",
+  "@settingsRoutesIOS": {
+    "description": "Settings › Automation: the iOS bundle id field."
+  },
+  "settingsRoutesPath": "Route path",
+  "@settingsRoutesPath": {
+    "description": "Settings › Automation: a route template, which may use {scheme}."
+  },
+  "settingsRoutesAdd": "Add",
+  "@settingsRoutesAdd": {
+    "description": "Settings › Automation: the button that saves a preset."
+  },
+  "settingsRoutesEmpty": "No app routes yet.",
+  "@settingsRoutesEmpty": {
+    "description": "Settings › Automation: shown when no preset is saved."
+  },
+  "settingsRoutesRemove": "Remove",
+  "@settingsRoutesRemove": {
+    "description": "Settings › Automation: the button that removes a preset."
+  },
+  "sidebarBrowser": "Browser",
+  "@sidebarBrowser": {
+    "description": "Sidebar: opens the embedded browser page."
+  },
+  "browserTitle": "Browser",
+  "@browserTitle": {
+    "description": "Embedded browser page: the title."
+  },
+  "browserDesc": "A page Pinky and its model can drive, for a simulator site or any other page. Cookies and saved addresses stay on this computer.",
+  "@browserDesc": {
+    "description": "Embedded browser page: the sentence under the title."
+  },
+  "browserURL": "Address",
+  "@browserURL": {
+    "description": "Embedded browser: the address field."
+  },
+  "browserGo": "Go",
+  "@browserGo": {
+    "description": "Embedded browser: opens the address."
+  },
+  "browserBack": "Back",
+  "@browserBack": {
+    "description": "Embedded browser: the previous page."
+  },
+  "browserForward": "Forward",
+  "@browserForward": {
+    "description": "Embedded browser: the next page."
+  },
+  "browserReload": "Reload",
+  "@browserReload": {
+    "description": "Embedded browser: loads the page again."
+  },
+  "browserSave": "Save address",
+  "@browserSave": {
+    "description": "Embedded browser: remembers the current address."
+  },
+  "browserSaved": "Saved addresses",
+  "@browserSaved": {
+    "description": "Embedded browser: the heading above saved addresses."
+  },
+  "browserEmpty": "No page open.",
+  "@browserEmpty": {
+    "description": "Embedded browser: shown before an address is opened."
+  },
+  "browserWindow": "Open browser window",
+  "@browserWindow": {
+    "description": "Embedded browser: opens Chrome or Chromium on this page so a person can sign in."
+  },
+  "browserWindowOpen": "Pinky's browser window is open. Sign in there; the tools use the same page.",
+  "@browserWindowOpen": {
+    "description": "Embedded browser: shown after the Chrome window opens."
+  },
+  "remoteAuthToggle": "Require the agent token",
+  "@remoteAuthToggle": {
+    "description": "Settings › Automation: when on, remote MCP needs the bearer token."
+  },
+  "remoteAuthDesc": "Off lets any client that can reach the address call Pinky. Leave it on outside a network you trust.",
+  "@remoteAuthDesc": {
+    "description": "Settings › Automation: the note under Require the agent token."
+  },
+  "unlockWindowForeverLine": "On until you end it. It does not expire.",
+  "unlockWindowBannerForever": "Unlock without asking · on",
+  "unlockWindowOnForeverToast": "Unlock without asking is on for {name}. It does not expire.",
+  "browserNewTab": "New tab",
+  "browserCloseTab": "Close tab",
+  "browserEmbedded": "The page is inside this window. Sign in here; Pinky keeps the login.",
+  "browserNoWindow": "The browser is embedded in Pinky's window. Open Pinky to use it.",
+  "@unlockWindowForeverLine": {
+    "description": "Unlock without asking, while it does not expire: the line under the switch."
+  },
+  "@unlockWindowBannerForever": {
+    "description": "The strip under the phone while unlock without asking does not expire."
+  },
+  "@unlockWindowOnForeverToast": {
+    "description": "Toast after unlock without asking is turned on with no expiry. name is the phone."
+  },
+  "@browserNewTab": {
+    "description": "Embedded browser: the button that opens another tab."
+  },
+  "@browserCloseTab": {
+    "description": "Embedded browser: the button that closes the current tab."
+  },
+  "@browserEmbedded": {
+    "description": "Embedded browser: the note that the page is inside Pinky's window and the login is kept."
+  },
+  "@browserNoWindow": {
+    "description": "Embedded browser tools, when Pinky's window is not open."
   }
 }
